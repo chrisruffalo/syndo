@@ -93,6 +93,12 @@ public class ComponentBuildAction extends BuilderAction {
             return result;
         }
 
+        try {
+            Files.deleteIfExists(tarFile);
+        } catch (IOException ex) {
+            // nothing to do if this fails, just move on
+        }
+
         boolean syndoBuildSuccess;
         try {
             syndoBuildSuccess = waitAndWatchBuild(targetNamespace, client, build, logger);

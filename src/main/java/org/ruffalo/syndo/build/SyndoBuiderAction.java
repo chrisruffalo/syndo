@@ -113,6 +113,12 @@ public class SyndoBuiderAction extends BuilderAction {
                 return result;
             }
 
+            try {
+                Files.deleteIfExists(tarFile);
+            } catch (IOException ex) {
+                // nothing to do if this fails, just move on
+            }
+
             boolean bootstrapSucceeded;
             try {
                 bootstrapSucceeded = waitAndWatchBuild(namespaceName, client, build, logger);
