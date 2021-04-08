@@ -1,0 +1,7 @@
+# ide files
+.idea
+*.iml
+
+# maven transient files
+dependency-reduced-pom.xml
+target

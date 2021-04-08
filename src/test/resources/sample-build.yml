@@ -1,0 +1,25 @@
+syndo:
+  builder:
+    namespace: syndo
+  components:
+    - name: base
+      from: openshift/eap7.3:cp4
+      to: base
+      path: target/deployments/base
+    - name: app
+      from: base
+      to: app
+      path: target/deployments/app
+    - name: service
+      from: base
+      to: service
+      path: target/deployments/service
+    - name: gateway
+      from: base
+      to: gateway
+      path: target/deployments/gateway
+  aliases:
+    - name: slim
+      include:
+        - base
+        - app
