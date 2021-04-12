@@ -8,6 +8,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.*;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.apache.commons.compress.utils.IOUtils;
+import org.ruffalo.syndo.resources.ExportResources;
 import org.ruffalo.syndo.resources.SyndoTarCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,20 +16,32 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 public class SyndoBuiderAction extends BuilderAction {
 
     private static final Logger logger = LoggerFactory.getLogger(SyndoBuiderAction.class);
 
+    public static final String BOOTSTRAP_RESOURCE_PATH = "containers/syndo-builder";
+
     public static final String SYNDO_BUILDER = SYNDO + "-builder";
     public static final String SYNDO_BUILDER_LATEST = SYNDO_BUILDER + ":latest";
 
     private final String targetNamespace;
+    private Path bootstrapDirectory;
 
-    public SyndoBuiderAction(final String targetNamespace) {
+    public SyndoBuiderAction(final String targetNamespace, final Path bootstrapDirectory) {
+        if (bootstrapDirectory == null || !Files.exists(bootstrapDirectory)) {
+            try {
+                this.bootstrapDirectory = ExportResources.resourceToPath(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(BOOTSTRAP_RESOURCE_PATH)));
+            } catch (URISyntaxException | IOException e) {
+                throw new RuntimeException("Could not load internal resource path (" + BOOTSTRAP_RESOURCE_PATH + ") when bootstrap directory is null or unavailable", e);
+            }
+        } else {
+            this.bootstrapDirectory = bootstrapDirectory;
+        }
         this.targetNamespace = targetNamespace;
     }
 
@@ -60,9 +73,9 @@ public class SyndoBuiderAction extends BuilderAction {
                 result.setStatus(BuildResult.Status.FAILED);
                 return result;
             }
-            final String dockerFileString;
+            final String dockerFileContentsString;
             try {
-                dockerFileString = new String(IOUtils.toByteArray(stream));
+                dockerFileContentsString = new String(IOUtils.toByteArray(stream));
             } catch (IOException e) {
                 logger.error("Could not read embedded dockerfile for syndo-builder: {}", e.getMessage());
                 result.setStatus(BuildResult.Status.FAILED);
@@ -76,7 +89,7 @@ public class SyndoBuiderAction extends BuilderAction {
                     .withNewStrategy()
                     .withDockerStrategy(dockerBuildStrategy)
                     .endStrategy()
-                    .withSource(new BuildSourceBuilder().withDockerfile(dockerFileString).build())
+                    .withSource(new BuildSourceBuilder().withDockerfile(dockerFileContentsString).build())
                     .withOutput(new BuildOutputBuilder().withNewTo().withNamespace(namespaceName).withName(is.getMetadata().getName()).endTo().build())
                     .build();
             BuildConfig syndoBuilderConfig = new BuildConfigBuilder()
@@ -85,16 +98,11 @@ public class SyndoBuiderAction extends BuilderAction {
                     .build();
             syndoBuilderConfig = client.buildConfigs().inNamespace(namespaceName).createOrReplace(syndoBuilderConfig);
 
-            URL url = Thread.currentThread().getContextClassLoader().getResource("containers/syndo-builder");
-            if (url == null) {
-                logger.error("Could not load embedded resource folder.");
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
-            }
+            // create in-memory/jimfs tar file as target for build-contents tar
             final Path tarFile = this.fs().getPath("/", syndoBuilderConfig.getMetadata().getName() + ".tar").normalize().toAbsolutePath();
             try {
-                SyndoTarCreator.createResourceTar(tarFile, url);
-            } catch (URISyntaxException | IOException e) {
+                SyndoTarCreator.createDirectoryTar(tarFile, this.bootstrapDirectory);
+            } catch (IOException e) {
                 logger.error("Could not create tar resource: {}", e.getMessage());
                 result.setStatus(BuildResult.Status.FAILED);
                 return result;

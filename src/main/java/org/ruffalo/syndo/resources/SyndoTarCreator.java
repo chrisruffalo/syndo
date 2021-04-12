@@ -6,33 +6,30 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 
 public class SyndoTarCreator {
 
+    public static TarArchiveOutputStream createTar(final Path outputTarPath) throws IOException {
+        final TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(outputTarPath)));
+        tar.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+        tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+        return tar;
+    }
+
+    public static void addToTar(final TarArchiveOutputStream tar, final Path fileToAdd, final String entryName) throws IOException {
+        final TarArchiveEntry entry = new TarArchiveEntry(entryName);
+        entry.setSize(Files.size(fileToAdd));
+        tar.putArchiveEntry(entry);
+        IOUtils.copy(Files.newInputStream(fileToAdd), tar);
+        tar.closeArchiveEntry();
+    }
+
     public static void createResourceTar(final Path outputTarPath, final URL resourceUrl) throws URISyntaxException, IOException {
-        Path folder;
-        try {
-            folder = Paths.get(resourceUrl.toURI());
-        } catch (FileSystemNotFoundException fex) {
-            FileSystem fs = FileSystems.newFileSystem(resourceUrl.toURI(), new HashMap<>());
-            final String resourceUrlToString = resourceUrl.toString();
-            final int subPathIndex = resourceUrlToString.indexOf("!");
-            if (subPathIndex >= 0 && subPathIndex + 1 < resourceUrlToString.length()) {
-                String path = resourceUrlToString.substring(subPathIndex + 1);
-                if (!path.startsWith("/")) {
-                    path = "/" + path;
-                }
-                folder = fs.getPath(path);
-            } else {
-                folder = fs.getPath("/");
-            }
-        }
+        Path folder = ExportResources.resourceToPath(resourceUrl);
         createDirectoryTar(outputTarPath, folder);
     }
 
@@ -43,25 +40,31 @@ public class SyndoTarCreator {
         }
 
         try (
-            final OutputStream rawOutputStream = Files.newOutputStream(outputTarPath);
-            final TarArchiveOutputStream tarArchiveOutputStream = new TarArchiveOutputStream(new GzipCompressorOutputStream(rawOutputStream))
+            final TarArchiveOutputStream tarArchiveOutputStream = createTar(outputTarPath)
         ) {
-            tarArchiveOutputStream.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
-            tarArchiveOutputStream.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-            Files.walkFileTree(rootDirectoryPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    final Path entryPath = rootDirectoryPath.relativize(file);
-                    final TarArchiveEntry entry = new TarArchiveEntry(entryPath.toString());
-                    entry.setSize(Files.size(file));
-                    tarArchiveOutputStream.putArchiveEntry(entry);
-                    IOUtils.copy(Files.newInputStream(file), tarArchiveOutputStream);
-                    tarArchiveOutputStream.closeArchiveEntry();
-                    return super.visitFile(file, attrs);
-                }
-            });
+            addPrefixedDirectoryToTar(tarArchiveOutputStream, rootDirectoryPath, "");
         }
     }
+
+    public static void addPrefixedDirectoryToTar(final TarArchiveOutputStream existingTar, final Path directoryPath, final String prefix) throws IOException {
+        Files.walkFileTree(directoryPath, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Path entryPath = directoryPath.relativize(file);
+
+                if (prefix != null && !prefix.isEmpty()) {
+                    entryPath = Paths.get(prefix).resolve(entryPath);
+                }
+
+                // add entry name to tar
+                addToTar(existingTar, file, entryPath.toString());
+
+                // continue file visit
+                return super.visitFile(file, attrs);
+            }
+        });
+    }
+
 
 
 }

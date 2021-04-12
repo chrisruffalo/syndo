@@ -16,6 +16,8 @@
 
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
@@ -38,9 +40,33 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.12.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.12.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.81</version>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.7.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -55,6 +81,7 @@
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>org.ruffalo.syndo.Main</mainClass>
                         </transformer>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                     </transformers>
                     <minimizeJar>true</minimizeJar>
                     <filters>
@@ -64,6 +91,13 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <exclude>**/MANIFEST.MF</exclude>
+                                <exclude>**/module-info.class</exclude>
+                                <exclude>**/LICENSE</exclude>
+                                <exclude>**/NOTICE</exclude>
+                                <exclude>**/jandex.idx</exclude>
+                                <exclude>**/manifest.vm</exclude>
+                                <exclude>**/*-schema.json</exclude>
                             </excludes>
                         </filter>
                         <filter>

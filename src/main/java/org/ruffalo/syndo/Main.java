@@ -1,29 +1,32 @@
 package org.ruffalo.syndo;
 
-import io.fabric8.openshift.client.DefaultOpenShiftClient;
-import io.fabric8.openshift.client.OpenShiftClient;
-import org.ruffalo.syndo.build.BuildResult;
-import org.ruffalo.syndo.build.BuilderAction;
-import org.ruffalo.syndo.build.ComponentBuildAction;
-import org.ruffalo.syndo.build.SyndoBuiderAction;
-
-import java.nio.file.Paths;
+import org.ruffalo.syndo.cmd.Command;
+import org.ruffalo.syndo.executions.Execution;
+import org.ruffalo.syndo.executions.ExecutionResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main {
 
-    public static void main(String[] args) {
-        try (final OpenShiftClient client = new DefaultOpenShiftClient()) {
-            final SyndoBuiderAction action1 = new SyndoBuiderAction(BuilderAction.SYNDO);
-            final BuildResult r1 = action1.build(client);
-            if (r1.getStatus().equals(BuildResult.Status.FAILED)) {
-                System.exit(1);
-            }
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-            final ComponentBuildAction action2 = new ComponentBuildAction(BuilderAction.SYNDO, Paths.get("./sample-build"));
-            final BuildResult r2 = action2.build(client);
-            if (r2.getStatus().equals(BuildResult.Status.FAILED)) {
-                System.exit(1);
-            }
+    public static void main(String[] args) {
+        // parse command
+        final Command cmd = Command.parse(args);
+
+        // handle help if asked for
+        if (cmd.isHelp()) {
+            cmd.getCommander().usage();
+            System.exit(0);
+        }
+
+        // get execution from execution factory
+        final Execution execution = Execution.get(cmd);
+
+        // execute command
+        final ExecutionResult result = execution.execute();
+        if (result.getExitCode() != 0) {
+            System.exit(result.getExitCode());
         }
     }
 
