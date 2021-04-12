@@ -3,6 +3,7 @@ package org.ruffalo.syndo.cmd;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import org.ruffalo.syndo.cmd.converters.StringToPathConverter;
+import org.ruffalo.syndo.cmd.converters.StringToPathListConverter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +20,7 @@ public class Command {
     @Parameter(names={"--help", "-h"}, description = "Print this help message", help = true)
     private boolean help = false;
 
-    @Parameter(names={"--openshift-config-path", "-O"}, description = "Path to the directory where the kube authentication/configuration file can be found", converter = StringToPathConverter.class)
+    @Parameter(names={"--openshift-config-path", "-O"}, description = "Path to the directory where the kube authentication/configuration file can be found", listConverter = StringToPathListConverter.class)
     private List<Path> openshiftConfigSearchPaths = getDefaultSearchPaths();
 
     private CommandBuild build = new CommandBuild();
