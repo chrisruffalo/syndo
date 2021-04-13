@@ -2,8 +2,6 @@ package org.ruffalo.syndo.executions;
 
 import org.ruffalo.syndo.cmd.Command;
 
-import java.util.Locale;
-
 public abstract class Execution {
 
     public abstract ExecutionResult execute();

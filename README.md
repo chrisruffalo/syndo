@@ -9,9 +9,11 @@ the need for pulling images to the build pod every time a new OpenShift build is
 ## Features
 * Creates custom build image as needed
 * Supports serialized buildah or Dockerfile (buildah bud) builds
+* FROM/required builds are resolved at each step
 * Resolves component build order and builds dependent components after their dependencies
 * Works within a single namespace to produce output images
 * Designed to minimize image pulls and pushes
+* ImageStreams and ImageStreamTags are managed by Syndo and do not need to be managed directly
 
 ## Compatibility
 * OpenShift 4.7+

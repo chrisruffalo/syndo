@@ -1,42 +1,34 @@
 package org.ruffalo.syndo.executions;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.api.model.ProjectBuilder;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.io.input.ReaderInputStream;
-import org.ruffalo.syndo.build.*;
+import org.ruffalo.syndo.build.Action;
+import org.ruffalo.syndo.build.BuildContext;
+import org.ruffalo.syndo.build.BuildPrepareAction;
+import org.ruffalo.syndo.build.BuildResolveAction;
+import org.ruffalo.syndo.build.ComponentBuildAction;
+import org.ruffalo.syndo.build.CreateTarAction;
+import org.ruffalo.syndo.build.SyndoBuiderAction;
+import org.ruffalo.syndo.build.VerifyAction;
 import org.ruffalo.syndo.cmd.Command;
 import org.ruffalo.syndo.cmd.CommandBuild;
-import org.ruffalo.syndo.config.Component;
 import org.ruffalo.syndo.config.Loader;
 import org.ruffalo.syndo.config.Root;
-import org.ruffalo.syndo.model.BuildNode;
-import org.ruffalo.syndo.model.DirSourceNode;
-import org.ruffalo.syndo.model.DockerfileSourceNode;
-import org.ruffalo.syndo.model.ImageRefSourceNode;
-import org.ruffalo.syndo.resources.SyndoTarCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.print.Doc;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
 import java.net.URL;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * An execution object is created and configured for an execution. It needs the details necessary to build
@@ -46,7 +38,7 @@ public class BuildExecution extends Execution {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private Command command;
+    private final Command command;
 
     public BuildExecution(final Command command) {
         this.command = command;
@@ -54,11 +46,17 @@ public class BuildExecution extends Execution {
 
     public ExecutionResult execute() {
         final CommandBuild buildCommand = this.command.getBuild();
+
+        final BuildContext context = new BuildContext();
+        context.setCommand(command);
+        context.setCommandBuild(buildCommand);
+
         final Path pathToConfig = buildCommand.getBuildFile();
         if (!Files.exists(pathToConfig)) {
             logger.error("No build yaml could be found at path: {}", pathToConfig);
             return new ExecutionResult(1);
         }
+        context.setConfigPath(pathToConfig);
 
         final ExecutionResult result = new ExecutionResult();
 
@@ -96,33 +94,18 @@ public class BuildExecution extends Execution {
         }
 
         // load syndo root configuration
-        final Root config = Loader.read(pathToConfig);
-        // todo: verify config and report
         logger.info("Using build file: {}", pathToConfig);
-
-        // create map of components so we can handle ordering/dependencies
-        final Map<String, Component> componentMap = new HashMap<>();
-        config.getComponents().forEach(component -> componentMap.put(component.getName(), component));
-
-        // todo: filter components that are being built according to the requested components
-        //       and aliases
-
-
-        // create output build tar
-        Path outputTar = buildCommand.getTarOutput();
-        if (outputTar != null) {
-            outputTar = outputTar.normalize().toAbsolutePath();
-            logger.info("Build tar: {}", outputTar);
-        } else {
-            final FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-            outputTar = fs.getPath("build-output.tar.gz").normalize().toAbsolutePath();
-        }
+        final Root config = Loader.read(pathToConfig);
+        context.setConfig(config);
 
         // now we can start a build...
         try (
             final KubernetesClient k8s = new DefaultOpenShiftClient(openshiftClientConfig);
             final OpenShiftClient client = k8s.adapt(OpenShiftClient.class)
        ) {
+            // set client on context
+            context.setClient(client);
+
             // check kubernetes client
             final URL ocUrl = client.getOpenshiftUrl();
             if (ocUrl == null) {
@@ -138,6 +121,7 @@ public class BuildExecution extends Execution {
                 tmpNamespace = client.getNamespace();
             }
             final String namespace = tmpNamespace;
+            context.setNamespace(namespace);
 
             // todo: warn about 'dangerous' namespaces (default, etc)
 
@@ -148,236 +132,35 @@ public class BuildExecution extends Execution {
             }
             logger.info("Namespace: {}", namespace);
 
-            // build everything into the node map
-            final Map<String, String> outputRefResolveMap = new HashMap<>();
-            final Map<String, DirSourceNode> sourceNodeMap = new HashMap<>();
-            config.getComponents().forEach(component -> {
-                DirSourceNode node = null;
-                if (component.getDockerfile() != null && !component.getDockerfile().isEmpty()) {
-                    final DockerfileSourceNode dockerfileSourceNode = new DockerfileSourceNode(component.getName());
-                    dockerfileSourceNode.setDockerfile(component.getDockerfile());
-                    node = dockerfileSourceNode;
-                } else {
-                    node = new DirSourceNode(component.getName());
-                }
-
-                // todo: maybe do a better job of resolving the target path
-                Path componentDir = Paths.get(component.getPath());
-                if (!componentDir.isAbsolute()) {
-                    if (!Files.exists(componentDir)) {
-                        // try and resolve relative to build yaml
-                        componentDir = pathToConfig.getParent().resolve(componentDir).normalize().toAbsolutePath();
-                    }
-                }
-                if (!Files.exists(componentDir)) {
-                    logger.error("Could not resolve directory '{}' for component '{}', skipping", component.getPath(), component.getName());
-                    return;
-                }
-                node.setDirectory(componentDir);
-
-                // todo: do a better job of resolving the output reference
-                String to = component.getTo();
-                if (to == null || to.isEmpty()) {
-                    to = component.getName();
-                }
-                node.setOutputRef(this.resolveOutputRef(buildCommand, client, namespace, to));
-                outputRefResolveMap.put(node.getOutputRef(), node.getName());
-
-                // add to map
-                sourceNodeMap.put(component.getName(), node);
-            });
-
-            // go through again and resolve "from" references
-            sourceNodeMap.forEach((key, node) -> {
-                final Component component = componentMap.get(key);
-                if (component == null) {
-                    return;
-                }
-                final DirSourceNode from = sourceNodeMap.get(component.getFrom());
-
-                if (from == null) {
-                    // set the dockerfile path on the component using the files in the resolved node directory
-                    if (node instanceof DockerfileSourceNode) {
-                        final DockerfileSourceNode dsNode = (DockerfileSourceNode) node;
-                        final Path dockerfilePath = node.getDirectory().resolve(dsNode.getDockerfile()).normalize().toAbsolutePath();
-                        if (!Files.exists(dockerfilePath)) {
-                            logger.error("No dockerfile resolved for '{}' at path '{}'", component.getName(), dockerfilePath);
-                        }
-                        // re-normalize path
-                        dsNode.setDockerfile(node.getDirectory().relativize(dockerfilePath).toString());
-                        dsNode.setDockerfile(component.getDockerfile());
-                        List<String> dockerLines = null;
-                        try {
-                            dockerLines = Files.readAllLines(dockerfilePath);
-                        } catch (IOException e) {
-                            logger.error("Could not read dockerfile {}", dockerfilePath);
-                        }
-                        if (dockerLines == null) {
-                            dockerLines = Collections.emptyList();
-                        }
-                        if (dockerLines.isEmpty()) {
-                            logger.error("Empty dockerfile {} provided", dockerfilePath);
-                        }
-                        // this is the raw content
-                        dsNode.setDockerfileContents(dockerLines);
-                        String fromRef = "";
-                        for(final String line : dockerLines) {
-                            if (line.trim().toUpperCase().startsWith("FROM")) {
-                                fromRef = line.substring(4).trim();
-                                break;
-                            }
-                        }
-                        if (fromRef.isEmpty()) {
-                            logger.error("Could not read FROM image in {}", dockerfilePath);
-                        } else {
-                            DirSourceNode fromNode = sourceNodeMap.get(fromRef);
-                            if (fromNode == null) {
-                                final String nodeName = outputRefResolveMap.get(fromRef);
-                                fromNode = sourceNodeMap.get(nodeName);
-                            }
-                            // todo: figure out how to feed the resolved reference back into the docker build file
-                            if (fromNode != null) {
-                                node.setFrom(fromNode);
-                            } else {
-                                this.setFromImageRef(buildCommand, node, client, namespace, fromRef);
-                            }
-                            // update from ref in dockerfile contents
-                            for (int i = 0; i < dockerLines.size(); i++) {
-                                final String line = dockerLines.get(i);
-                                if (line.trim().toUpperCase().startsWith("FROM")) {
-                                    final String dockerFromRef = String.format("FROM %s", node.getFromRef());
-                                    dockerLines.set(i, dockerFromRef);
-                                    dsNode.setDockerfileContents(dockerLines);
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        this.setFromImageRef(buildCommand, node, client, namespace, component.getFrom());
-                    }
-                } else {
-                    node.setFrom(from);
-                    // keep the from node
-                    from.setKeep(true);
-                }
-            });
-
-            // todo: check for cyclic dependencies
-
-            // ensure that the build list is the nodes, in order
-            final List<DirSourceNode> buildOrder = new LinkedList<>();
-            while(!sourceNodeMap.isEmpty()) {
-                final Set<Map.Entry<String, DirSourceNode>> entrySet = new HashSet<>(sourceNodeMap.entrySet());
-                for (Map.Entry<String, DirSourceNode> entry : entrySet) {
-                    final DirSourceNode node = entry.getValue();
-                    final BuildNode from = node.getFrom();
-                    // if it starts from an image reference it can go instantly
-                    if (from instanceof ImageRefSourceNode) {
-                        buildOrder.add(node);
-                        sourceNodeMap.remove(node.getName());
-                        continue;
-                    }
-
-                    // if the parent file source node has been removed from the map
-                    // then this node is cleared to go
-                    if (from instanceof DirSourceNode) {
-                        final DirSourceNode fromFileSource = (DirSourceNode) from;
-                        if (sourceNodeMap.get(fromFileSource.getName()) == null) {
-                            buildOrder.add(node);
-                            sourceNodeMap.remove(node.getName());
-                            continue;
-                        }
-                    }
-
-                    // do nothing
-                }
-            }
-
-            // go through the build order and ensure that there are image streams in the namespace for eac
-            // output reference
-
-            try (final TarArchiveOutputStream tarStream = SyndoTarCreator.createTar(outputTar)) {
-                // walk through the build components, add them to the tar, and then add metadata to them
-                // we do this with an indexed for loop so we can get the build order built out in a way
-                // that bash will understand
-                for (int i = 0; i < buildOrder.size(); i++) {
-                    final DirSourceNode sourceNode = buildOrder.get(i);
-                    final String prefix = String.format("%04d_%s", i, sourceNode.getName());
-                    logger.info("Adding {} with context {} to {}", sourceNode.getName(), sourceNode.getDirectory(), prefix);
-
-                    // now add metadata to prefix
-                    final Map<String, String> meta = new HashMap<>();
-                    meta.put("COMPONENT", sourceNode.getName());
-                    meta.put("OUTPUT_TARGET", sourceNode.getOutputRef());
-
-
-                    if(sourceNode instanceof DockerfileSourceNode) {
-                        meta.put("DOCKERFILE", ((DockerfileSourceNode)sourceNode).getDockerfile());
-                    }
-
-                    final String fromRef = sourceNode.getFromRef();
-                    if (fromRef != null) {
-                        meta.put("FROM_IMAGE", fromRef);
-                    }
-
-                    if (sourceNode.isKeep()) {
-                        meta.put("KEEP", "true");
-                    }
-
-                    final Set<String> excludes = new HashSet<>();
-
-                    // add dockerfile override if it is needed
-                    if (sourceNode instanceof DockerfileSourceNode) {
-                        final DockerfileSourceNode dsNode = (DockerfileSourceNode)sourceNode;
-                        final String joined = String.join("\n", dsNode.getDockerfileContents());
-                        logger.info("new docker file contents:\n{}", joined);
-                        final String outputDockerfile = prefix + "/" + dsNode.getDockerfile();
-                        logger.info("write docker file to: {}", outputDockerfile);
-                        SyndoTarCreator.addToTar(tarStream, joined.getBytes(), outputDockerfile);
-                        excludes.add(outputDockerfile);
-                    }
-
-                    // then meta files
-                    SyndoTarCreator.addMetaEnvToTar(tarStream, prefix + "/.meta/env", meta);
-
-                    // add project contexts tar, excluding files that may have been previously created
-                    SyndoTarCreator.addPrefixedDirectoryToTar(tarStream, sourceNode.getDirectory(), prefix, excludes);
-                }
-            } catch (IOException e) {
-                logger.error("Could not create tar output stream for build", e);
-                result.setExitCode(1);
-                return result;
-            }
-
-            // if dry run we can stop now
-            if (buildCommand.isDryRun()) {
-                logger.info("Ending dry run");
-                return result;
-            }
-
             final List<Action> actions = new LinkedList<>();
 
-            // todo: better resolution of bootstrap directory relative to current path
-            // todo: push more of the construction logic down into the action;
-            Path bootstrapDirectory = buildCommand.getBootstrapRoot();
-            if (bootstrapDirectory != null && !Files.exists(bootstrapDirectory)) {
-                bootstrapDirectory = null;
-            }
-            final SyndoBuiderAction action1 = new SyndoBuiderAction(namespace, bootstrapDirectory);
-            if (bootstrapDirectory != null || buildCommand.isForceBootstrap()) {
-                action1.setForceBuild(true);
-            }
-            actions.add(action1);
+            // verify configuration
+            final VerifyAction verifyAction = new VerifyAction();
+            actions.add(verifyAction);
 
-            final ComponentBuildAction action2 = new ComponentBuildAction(namespace, outputTar);
-            actions.add(action2);
+            final SyndoBuiderAction syndoBuildAction = new SyndoBuiderAction();
+            actions.add(syndoBuildAction);
 
-            final BuildContext context = new BuildContext();
-            context.setCommand(command);
-            context.setClient(client);
+            // prepare build
+            final BuildPrepareAction prepareAction = new BuildPrepareAction();
+            actions.add(prepareAction);
+
+            // resolve artifacts inputs/outputs and build order from dependencies
+            final BuildResolveAction resolveAction = new BuildResolveAction();
+            actions.add(resolveAction);
+
+            // create build tar
+            final CreateTarAction createTarAction = new CreateTarAction();
+            actions.add(createTarAction);
+
+            final ComponentBuildAction componentBuildAction = new ComponentBuildAction();
+            actions.add(componentBuildAction);
+
+            // execute actions and break on failed action
             for (final Action action : actions) {
                 action.build(context);
                 if (!BuildContext.Status.OK.equals(context.getStatus())) {
+                    result.setExitCode(1);
                     break;
                 }
             }
@@ -389,67 +172,4 @@ public class BuildExecution extends Execution {
         return result;
     }
 
-    private String resolveOutputRef(final CommandBuild build, final OpenShiftClient client, final String namespace, final String imageRef) {
-        // if the name is just 'imageRef' return the image ref on the namespace
-        if (!imageRef.contains("/") && !imageRef.contains(":")) {
-            return String.format("%s/%s", namespace, imageRef);
-        }
-        return imageRef;
-    }
-
-    /**
-     * Use the OpenShift client to resolve or create an image reference that matches the given input
-     * image reference
-     *
-     * @param client
-     * @param imageRef
-     * @return
-     */
-    private String resolveInputRef(final CommandBuild build, final OpenShiftClient client, final String namespace, final String imageRef) {
-        // look through tags to find upstream image that matches
-        final List<ImageStreamTag> tags = client.imageStreamTags().inAnyNamespace().list().getItems();
-        if (!tags.isEmpty()) {
-            for (ImageStreamTag tag : tags) {
-                if (tag == null || tag.getTag() == null || tag.getTag().getFrom() == null) {
-                    continue;
-                }
-
-                final String tagFullName = tag.getMetadata().getName();
-                final String tagName = tagFullName.split(":")[0];
-                final String tagNamespace = tag.getMetadata().getNamespace();
-
-                final String tagNameWithNamespace = String.format("%s/%s", tagNamespace, tagName);
-                final String tagFullRef = String.format("%s/%s:%s", tagNamespace, tagName, tag.getTag().getName());
-                final String fromName = tag.getTag().getFrom().getName();
-
-                // use tools to get image ref
-                if (tagName.equals(imageRef) || tagNameWithNamespace.equals(imageRef) || tagFullRef.equals(imageRef) || fromName.equals(imageRef)) {
-                    return tagFullRef;
-                }
-            }
-        }
-
-        // if the name is just 'imageRef' return the image ref on the namespace
-        if (!imageRef.contains("/") && !imageRef.contains(":")) {
-            return String.format("%s/%s", namespace, imageRef);
-        }
-
-        // break down image ref by components which are typically
-        // {repo url}/{namespace}/{image name}:{tag}
-
-
-        return null;
-    }
-
-    private void setFromImageRef(final CommandBuild buildCommand, final DirSourceNode node, final OpenShiftClient client, final String namespace, final String from) {
-        final String imageRef = this.resolveInputRef(buildCommand, client, namespace, from);
-        if (imageRef == null) {
-            logger.error("No image reference provided for: '{}'", from);
-        } else {
-            logger.info("Resolved '{}' for '{}'", imageRef, from);
-        }
-        final ImageRefSourceNode imageRefSourceNode = new ImageRefSourceNode(imageRef);
-        node.setFrom(imageRefSourceNode);
-
-    }
 }

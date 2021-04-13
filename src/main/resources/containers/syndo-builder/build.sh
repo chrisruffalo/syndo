@@ -5,11 +5,8 @@
 # to be the common platform for RHEL/UBI/Cent installs that makes it so that syndo.sh runs the same way
 # regardless of the platform.
 
-# enable container-tools repo
-#dnf -y module enable container-tools:rhel8
-
 # install additional packages
-dnf install -y zip unzip file #skopeo fuse-overlays
+microdnf install -y zip unzip file buildah skopeo fuse-overlayfs /etc/containers/storage.conf
 
 # clean up
 rm -rf /var/cache
@@ -26,6 +23,13 @@ touch /etc/subuid
 touch /etc/subgid
 chmod g=u /etc/sub*
 chmod 4755 /usr/bin/new{u,g}idmap
+
+# from rhel8/buildah
+sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' /etc/containers/storage.conf
+mkdir -p /var/lib/shared/vfs-images /var/lib/shared/vfs-layers
+touch /var/lib/shared/vfs-images/images.lock
+touch /var/lib/shared/vfs-layers/layers.lock
+sed -i -e 's|"/var/lib/shared",|#"/var/lib/shared",|' /etc/containers/storage.conf
 
 # ensure the root syndo directory is created
 mkdir -p /syndo

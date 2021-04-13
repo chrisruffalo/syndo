@@ -6,8 +6,6 @@ import com.beust.jcommander.Parameters;
 import org.ruffalo.syndo.cmd.converters.StringToPathConverter;
 
 import java.nio.file.Path;
-import java.util.LinkedList;
-import java.util.List;
 
 @Parameters
 public class CommandExport extends SubCommand {

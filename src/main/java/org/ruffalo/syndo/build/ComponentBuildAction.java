@@ -4,44 +4,45 @@ import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.fabric8.openshift.api.model.*;
+import io.fabric8.openshift.api.model.Build;
+import io.fabric8.openshift.api.model.BuildConfig;
+import io.fabric8.openshift.api.model.BuildConfigBuilder;
+import io.fabric8.openshift.api.model.BuildConfigSpec;
+import io.fabric8.openshift.api.model.BuildConfigSpecBuilder;
+import io.fabric8.openshift.api.model.BuildOutput;
+import io.fabric8.openshift.api.model.BuildOutputBuilder;
+import io.fabric8.openshift.api.model.CustomBuildStrategy;
+import io.fabric8.openshift.api.model.CustomBuildStrategyBuilder;
+import io.fabric8.openshift.api.model.ImageStream;
+import io.fabric8.openshift.api.model.ImageStreamBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
-import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
-import org.ruffalo.syndo.resources.SyndoTarCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class ComponentBuildAction extends BuilderAction {
 
     private static final Logger logger = LoggerFactory.getLogger(SyndoBuiderAction.class);
-
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
-    private final String targetNamespace;
-    private final Path targetTar;
-
-    public ComponentBuildAction(final String targetNamespace, final Path targetTar) {
-        this.targetNamespace = targetNamespace;
-        this.targetTar = targetTar;
-    }
 
     @Override
     public void build(BuildContext context) {
         // get client from context
         final OpenShiftClient client = context.getClient();
+        final String targetNamespace = context.getNamespace();
 
         // start result
         final BuildResult result = new BuildResult();
 
-        Namespace namespace = client.namespaces().withName(this.targetNamespace).get();
+        Namespace namespace = client.namespaces().withName(targetNamespace).get();
         if (namespace == null) {
             final ObjectMeta metadata = new ObjectMeta();
-            metadata.setName(this.targetNamespace);
+            metadata.setName(targetNamespace);
             namespace = client.namespaces().createOrReplace(new NamespaceBuilder().withMetadata(metadata).build());
         }
 
@@ -72,12 +73,12 @@ public class ComponentBuildAction extends BuilderAction {
         config = client.buildConfigs().inNamespace(targetNamespace).createOrReplace(config);
 
         final Build build;
-        try {
-            logger.info("Building from tar: {} ({})", this.targetTar, FileUtils.byteCountToDisplaySize(Files.size(this.targetTar)));
+        try (final InputStream inputStream = Files.newInputStream(context.getOutputTar())){
+            logger.info("Building from tar: {} ({})", context.getOutputTar(), FileUtils.byteCountToDisplaySize(Files.size(context.getOutputTar())));
             build = client.buildConfigs()
                     .inNamespace(targetNamespace)
                     .withName(config.getMetadata().getName())
-                    .instantiateBinary().fromInputStream(Files.newInputStream(this.targetTar));
+                    .instantiateBinary().fromInputStream(inputStream);
         } catch (IOException e) {
             logger.error("Could not start build: {}", e.getMessage());
             context.setStatus(BuildContext.Status.ERROR);

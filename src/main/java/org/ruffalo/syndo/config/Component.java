@@ -1,8 +1,5 @@
 package org.ruffalo.syndo.config;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class Component {
 
     private String name;

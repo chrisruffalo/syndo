@@ -2,7 +2,6 @@ package org.ruffalo.syndo.cmd;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import org.ruffalo.syndo.cmd.converters.StringToPathConverter;
 import org.ruffalo.syndo.cmd.converters.StringToPathListConverter;
 
 import java.nio.file.Files;

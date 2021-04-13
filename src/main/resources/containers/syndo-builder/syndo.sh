@@ -10,14 +10,16 @@
 # set the environment variables for rootless BUILDAH, this isn't done elsewhere because it would add to the complexity
 # of the image and is really only needed at the tool's runtime. setting them here puts them squarely in the responsibility
 # of this script
-export BUILDAH_ISOLATION=chroot
-export _BUILDAH_STARTED_IN_USERNS=1
-
-export STORAGE_DRIVER=vfs
+export BUILDAH_ISOLATION=${BUILDAH_ISOLATION:-chroot}
+export STORAGE_DRIVER=${STORAGE_DRIVER:-vfs}
 export BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}
 
-# create tool aliases
-alias buildah=$(which buildah)
+echo "-----------------------------------------"
+echo " ENV ENV ENV ENV ENV ENV ENV ENV ENV ENV "
+echo "-----------------------------------------"
+env
+echo ""
+echo "-----------------------------------------"
 
 # update the uid/gid settings for the subuid/subgid mapping
 STARTING_ID="1000000000" # the id that will be the minimum user id for subuid
@@ -37,8 +39,8 @@ tar xz -C /syndo/working
 
 # need to use the built-in push secret to push to the internal registry and they need to be slightly modified to work
 # as according to https://docs.openshift.com/container-platform/4.7/cicd/builds/custom-builds-buildah.html
-(echo "{ \"auths\": " ; cat /var/run/secrets/openshift.io/pull/.dockercfg ; echo "}") > /tmp/.dockercfg-pull
-(echo "{ \"auths\": " ; cat /var/run/secrets/openshift.io/push/.dockercfg ; echo "}") > /tmp/.dockercfg-push
+(echo "{ \"auths\": " ; cat ${PULL_DOCKERCFG_PATH}/.dockercfg ; echo "}") > /tmp/.dockercfg-pull
+(echo "{ \"auths\": " ; cat ${PUSH_DOCKERCFG_PATH}/.dockercfg ; echo "}") > /tmp/.dockercfg-push
 
 # create directory list and step through them
 DIRECTORIES=/syndo/working/*/
@@ -98,7 +100,9 @@ for DIR in ${DIRECTORIES[@]}; do
     if [[ "x" == "x${OUTPUT_TARGET}" ]]; then
       OUTPUT_TARGET=${OUTPUT_NAMESPACE}/${COMPONENT}
     fi
-    # set a temporary directory for use by buildah
+
+    # set a temporary directory for use by buildah, not having this set can cause issues with  storage
+    # space on rootless builds
     TMPDIR="${DIR}/.buildahtmp"
     mkdir -p ${TMPDIR}
     export TMPDIR
@@ -116,7 +120,7 @@ for DIR in ${DIRECTORIES[@]}; do
       EXIT_CODE=$?
     else
       # now actually start the container / pull / open the container context with buildah
-      CONTAINER=$(buildah from --authfile=/tmp/.dockercfg-pull --tls-verify=false ${FROM_REGISTRY}/${FROM_IMAGE})
+      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} from --authfile=/tmp/.dockercfg-pull --tls-verify=false ${FROM_REGISTRY}/${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
         echo "No container pulled for ${FROM_IMAGE}"
         exit 1
@@ -127,35 +131,34 @@ for DIR in ${DIRECTORIES[@]}; do
       # export some helpful variables for use inside the build.sh uploaded as the build step
       export MOUNTPOINT=$(buildah mount ${CONTAINER})
 
-      # now actually run the build script
+      # now actually run the build script with command tracing and by bubbling out errors
       (
-        chmod +x ${DIR}/build.sh
-        set -e
-        set -x
-        ${DIR}/build.sh
+        bash -v -e ${DIR}/build.sh
       )
       EXIT_CODE=$?
 
-      # commit the container and then remove the container
-      buildah commit ${CONTAINER} ${OUTPUT_TARGET}
-
-      # the container itself always needs to be removed as well, no longer needed after commit
-      buildah rm ${CONTAINER}
+      # commit the container to an image and remove the container
+      buildah --storage-driver=${STORAGE_DRIVER} commit --rm ${CONTAINER} ${OUTPUT_TARGET}
     fi
 
     if [[ "x0" == "x${EXIT_CODE}" ]]; then
       # push the output image
       echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}"
-      buildah --storage-driver=vfs push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
+      ls -lah /var/lib/shared/vfs-images
+      buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
+
+      if [[ "x" != "x${OUTPUT_TAG}" && "latest" != "${OUTPUT_TAG}" ]]; then
+        skopeo copy --authfile=/tmp/.dockercfg-pull --dest-tls-verify=false --src-tls-verify=false docker://${OUTPUT_REGISTRY}/${OUTPUT_TARGET} docker://${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
+      fi
 
       # the keep file signals that we need to keep the image for dependent build steps, if this file does not exist
       # we delete the image so as to save space (we don't want image space to fill up)
       if [[ "xtrue" != "x${KEEP}" ]]; then
-        buildah rmi -f ${OUTPUT_TARGET}
+        buildah --storage-driver=${STORAGE_DRIVER} rmi -f ${OUTPUT_TARGET}
       fi
 
       # output stats time
-      echo "${COMPONENT} finished in $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
+      echo "${COMPONENT} (${OUTPUT_TARGET}) finished in $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     else
       echo "${COMPONENT} failed after $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     fi

@@ -2,10 +2,12 @@ package org.ruffalo.syndo.build;
 
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.ruffalo.syndo.cmd.Command;
+import org.ruffalo.syndo.cmd.CommandBuild;
 import org.ruffalo.syndo.config.Component;
 import org.ruffalo.syndo.config.Root;
 import org.ruffalo.syndo.model.DirSourceNode;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +33,14 @@ public class BuildContext {
     private OpenShiftClient client;
 
     private Command command;
+
+    private CommandBuild commandBuild;
+
+    private Path outputTar;
+
+    private Path configPath;
+
+    private String namespace;
 
     public BuildContext.Status getStatus() {
         return status;
@@ -63,5 +73,61 @@ public class BuildContext {
 
     public void setCommand(Command command) {
         this.command = command;
+    }
+
+    public Root getConfig() {
+        return config;
+    }
+
+    public void setConfig(Root config) {
+        this.config = config;
+    }
+
+    public Map<String, Component> getComponentMap() {
+        return componentMap;
+    }
+
+    public void setComponentMap(Map<String, Component> componentMap) {
+        this.componentMap = componentMap;
+    }
+
+    public Map<String, DirSourceNode> getNodeMap() {
+        return nodeMap;
+    }
+
+    public void setNodeMap(Map<String, DirSourceNode> nodeMap) {
+        this.nodeMap = nodeMap;
+    }
+
+    public Path getOutputTar() {
+        return outputTar;
+    }
+
+    public void setOutputTar(Path outputTar) {
+        this.outputTar = outputTar;
+    }
+
+    public CommandBuild getCommandBuild() {
+        return commandBuild;
+    }
+
+    public void setCommandBuild(CommandBuild commandBuild) {
+        this.commandBuild = commandBuild;
+    }
+
+    public Path getConfigPath() {
+        return configPath;
+    }
+
+    public void setConfigPath(Path configPath) {
+        this.configPath = configPath;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 }
