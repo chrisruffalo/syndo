@@ -16,6 +16,7 @@ public class DirSourceNode extends BuildNode {
     private Path directory;
     private BuildNode from;
     private String outputRef;
+    private String hash;
     private boolean keep;
 
     public DirSourceNode(final String name) {
@@ -38,8 +39,23 @@ public class DirSourceNode extends BuildNode {
         return outputRef;
     }
 
+    public String getFullOutputRef() {
+        if (this.hash != null && !this.hash.isEmpty() && !this.outputRef.contains(":")) {
+            return outputRef + ":" + this.hash;
+        }
+        return outputRef;
+    }
+
     public void setOutputRef(String outputRef) {
         this.outputRef = outputRef;
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
     }
 
     public boolean isKeep() {
@@ -62,7 +78,7 @@ public class DirSourceNode extends BuildNode {
         if (this.from instanceof ImageRefSourceNode) {
             return ((ImageRefSourceNode)this.from).getImageRef();
         } else if(this.from instanceof DirSourceNode) {
-            return ((DirSourceNode)this.from).getOutputRef();
+            return ((DirSourceNode)this.from).getFullOutputRef();
         }
         return null;
     }

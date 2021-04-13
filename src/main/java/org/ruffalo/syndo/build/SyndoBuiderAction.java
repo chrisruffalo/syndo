@@ -2,6 +2,7 @@ package org.ruffalo.syndo.build;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.ObjectReferenceBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
@@ -17,10 +18,9 @@ import io.fabric8.openshift.api.model.ImageStreamBuilder;
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.apache.commons.compress.utils.IOUtils;
-import org.ruffalo.syndo.resources.ExportResources;
-import org.ruffalo.syndo.resources.SyndoTarCreator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ruffalo.syndo.cmd.CommandBootstrap;
+import org.ruffalo.syndo.resources.Resources;
+import org.ruffalo.syndo.resources.TarCreator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,8 +30,6 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 public class SyndoBuiderAction extends BuilderAction {
-
-    private static final Logger logger = LoggerFactory.getLogger(SyndoBuiderAction.class);
 
     public static final String BOOTSTRAP_RESOURCE_PATH = "containers/syndo-builder";
 
@@ -46,27 +44,41 @@ public class SyndoBuiderAction extends BuilderAction {
         // get client from context
         final OpenShiftClient client = context.getClient();
 
-        boolean forceBuild = false;
-        Path bootstrapDirectory = context.getCommandBuild().getBootstrapRoot();
-        if (!Files.exists(bootstrapDirectory)) {
+        final CommandBootstrap commandBootstrap = context.getCommandBuild() != null ? context.getCommandBuild() : context.getCommand().getBootstrap();
+
+        Path bootstrapDirectory = commandBootstrap.getBootstrapRoot();
+        if (bootstrapDirectory == null || !Files.exists(bootstrapDirectory)) {
             try {
-                bootstrapDirectory = ExportResources.resourceToPath(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(BOOTSTRAP_RESOURCE_PATH)));
+                bootstrapDirectory = Resources.resourceToPath(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(BOOTSTRAP_RESOURCE_PATH)));
             } catch (URISyntaxException | IOException e) {
                 throw new RuntimeException("Could not load internal resource path (" + BOOTSTRAP_RESOURCE_PATH + ") when bootstrap directory is null or unavailable", e);
             }
         } else {
-            forceBuild = true;
             bootstrapDirectory = bootstrapDirectory.normalize().toAbsolutePath();
         }
-        forceBuild = forceBuild || context.getCommandBuild().isForceBootstrap();
 
         final String namespaceName = context.getNamespace();
 
-        final ImageStreamTag ist = client.imageStreamTags().inNamespace(namespaceName).withName(SYNDO_BUILDER_LATEST).get();
-        if (ist == null || forceBuild) {
+        String bootstrapHash = "";
+        try {
+            bootstrapHash = Resources.hashPath(bootstrapDirectory);
+        } catch (IOException e) {
+            logger().error("Could not compute hash for {}: {}", bootstrapDirectory, e.getMessage());
+        }
+        final String tag = bootstrapHash.isEmpty() ? "latest" : bootstrapHash;
+
+        String syndoImageName = SYNDO_BUILDER;
+        if (!"latest".equalsIgnoreCase(tag)) {
+            syndoImageName = String.format("%s-%s", SYNDO_BUILDER, tag);
+        }
+        context.setBuilderImageName(syndoImageName);
+
+        ImageStreamTag ist = client.imageStreamTags().inNamespace(namespaceName).withName(syndoImageName + ":latest").get();
+        if ("latest".equalsIgnoreCase(tag) || ist == null || commandBootstrap.isForceBootstrap()) {
+            logger().info("Building syndo-builder from: {} -> {}", bootstrapDirectory, syndoImageName);
 
             // ensure that the target image stream exists
-            final ObjectMeta isMeta = new ObjectMetaBuilder().withName(SYNDO_BUILDER).build();
+            final ObjectMeta isMeta = new ObjectMetaBuilder().withName(syndoImageName).build();
             ImageStream is = new ImageStreamBuilder()
                     .withMetadata(isMeta)
                     .build();
@@ -75,11 +87,10 @@ public class SyndoBuiderAction extends BuilderAction {
             // get dockerfile resource
             final Path bootstrapDockerFile = bootstrapDirectory.resolve("Dockerfile");
             if (!Files.exists(bootstrapDockerFile)) {
-                logger.error("Dockerfile not found at {}", bootstrapDockerFile);
+                logger().error("Dockerfile not found at {}", bootstrapDockerFile);
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
-            logger.info("Bootstrap syndo-builder from: {}", bootstrapDirectory);
 
             final InputStream stream;
             try {
@@ -92,20 +103,23 @@ public class SyndoBuiderAction extends BuilderAction {
             try {
                 dockerFileContentsString = new String(IOUtils.toByteArray(stream));
             } catch (IOException e) {
-                logger.error("Could not read embedded dockerfile for syndo-builder: {}", e.getMessage());
+                logger().error("Could not read embedded dockerfile for syndo-builder: {}", e.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
 
             // create syndo build configuration
-            final ObjectMeta bcMeta = new ObjectMetaBuilder().withName(SYNDO_BUILDER).addToLabels(CREATED_FOR, SYNDO_BUILDER).build();
+            final ObjectMeta bcMeta = new ObjectMetaBuilder().withName(SYNDO_BUILDER).build();
             final DockerBuildStrategy dockerBuildStrategy = new DockerBuildStrategyBuilder().build();
             final BuildConfigSpec dockerBuildConfigSpec = new BuildConfigSpecBuilder()
                     .withNewStrategy()
                     .withDockerStrategy(dockerBuildStrategy)
                     .endStrategy()
                     .withSource(new BuildSourceBuilder().withDockerfile(dockerFileContentsString).build())
-                    .withOutput(new BuildOutputBuilder().withNewTo().withNamespace(namespaceName).withName(is.getMetadata().getName()).endTo().build())
+                    .withOutput(new BuildOutputBuilder()
+                            .withTo(new ObjectReferenceBuilder().withNamespace(namespaceName).withName(syndoImageName)
+                            .build()
+                        ).build())
                     .build();
             BuildConfig syndoBuilderConfig = new BuildConfigBuilder()
                     .withSpec(dockerBuildConfigSpec)
@@ -114,11 +128,14 @@ public class SyndoBuiderAction extends BuilderAction {
             syndoBuilderConfig = client.buildConfigs().inNamespace(namespaceName).createOrReplace(syndoBuilderConfig);
 
             // create in-memory/jimfs tar file as target for build-contents tar
-            final Path tarFile = this.fs().getPath("/", syndoBuilderConfig.getMetadata().getName() + ".tar").normalize().toAbsolutePath();
+            Path tarFile = commandBootstrap.getBootstrapTarOutput();
+            if (tarFile == null) {
+                tarFile = this.fs().getPath("/", syndoBuilderConfig.getMetadata().getName() + ".tar").normalize().toAbsolutePath();
+            }
             try {
-                SyndoTarCreator.createDirectoryTar(tarFile, bootstrapDirectory);
+                TarCreator.createDirectoryTar(tarFile, bootstrapDirectory);
             } catch (IOException e) {
-                logger.error("Could not create tar resource: {}", e.getMessage());
+                logger().error("Could not create tar resource: {}", e.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
@@ -131,7 +148,7 @@ public class SyndoBuiderAction extends BuilderAction {
                         .withName(syndoBuilderConfig.getMetadata().getName())
                         .instantiateBinary().fromInputStream(Files.newInputStream(tarFile));
             } catch (KubernetesClientException | IOException ex) {
-                logger.error("Could not start build: {}", ex.getMessage());
+                logger().error("Could not start build: {}", ex.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
@@ -144,17 +161,19 @@ public class SyndoBuiderAction extends BuilderAction {
 
             boolean bootstrapSucceeded;
             try {
-                bootstrapSucceeded = waitAndWatchBuild(namespaceName, client, build, logger);
+                bootstrapSucceeded = waitAndWatchBuild(namespaceName, client, build, logger());
             } catch (Exception e) {
-                logger.error("Could not wait for build to complete: {}", e.getMessage());
+                logger().error("Could not wait for build to complete: {}", e.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
             if (!bootstrapSucceeded) {
-                logger.error("Could not build the syndo build container, cannot proceed");
+                logger().error("Could not build the syndo build container, cannot proceed");
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
+        } else {
+            logger().info("Found image stream tag matching {} content: {}", SYNDO_BUILDER, ist.getMetadata().getName());
         }
 
     }

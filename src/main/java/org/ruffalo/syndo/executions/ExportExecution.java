@@ -2,7 +2,7 @@ package org.ruffalo.syndo.executions;
 
 import org.ruffalo.syndo.build.SyndoBuiderAction;
 import org.ruffalo.syndo.cmd.CommandExport;
-import org.ruffalo.syndo.resources.ExportResources;
+import org.ruffalo.syndo.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class ExportExecution extends Execution {
                 path = path.normalize().toAbsolutePath();
             }
             logger.info("Exporting resources to: {}", path);
-            ExportResources.exportResourceDir(Thread.currentThread().getContextClassLoader().getResource(SyndoBuiderAction.BOOTSTRAP_RESOURCE_PATH), path);
+            Resources.exportResourceDir(Thread.currentThread().getContextClassLoader().getResource(SyndoBuiderAction.BOOTSTRAP_RESOURCE_PATH), path);
         } catch (URISyntaxException | IOException e) {
             logger.error("Could not export resources: {}", e.getMessage());
             result.setExitCode(1);

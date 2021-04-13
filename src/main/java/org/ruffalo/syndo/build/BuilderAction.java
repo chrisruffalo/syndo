@@ -9,14 +9,10 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 public abstract class BuilderAction extends BaseAction {
 
     public static final String SYNDO = "syndo";
-
-    public static final String LABEL_PREFIX = "syndo/";
-    public static final String CREATED_FOR = LABEL_PREFIX + "created-for";
 
     protected boolean waitForStatus(final String statusToWaitFor, final String namespaceName, final OpenShiftClient client, final String podName, final Logger logger) {
         Pod pod = client.pods().inNamespace(namespaceName).withName(podName).get();
@@ -49,21 +45,6 @@ public abstract class BuilderAction extends BaseAction {
             if (client.pods().inNamespace(namespaceName).withName(buildPodName).get() != null) {
                 client.pods().inNamespace(namespaceName).withName(buildPodName).delete();
             }
-        }
-
-        // ensure build pod is marked as created for the same purpose
-        if (build.getMetadata().getLabels().get(CREATED_FOR) != null) {
-            client.pods().inNamespace(namespaceName).withName(buildPodName).edit(pod -> {
-                // do not edit null pods (doubt you can, but still)
-                if (pod == null) {
-                    return null;
-                }
-
-                final Map<String, String> labels = pod.getMetadata().getLabels();
-                labels.put(CREATED_FOR, build.getMetadata().getLabels().get(CREATED_FOR));
-                pod.getMetadata().setLabels(labels);
-                return pod;
-            });
         }
 
         // if the pod did not become ready (but after it has the right label) exit

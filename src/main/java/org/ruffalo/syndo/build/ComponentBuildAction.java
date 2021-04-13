@@ -1,7 +1,5 @@
 package org.ruffalo.syndo.build;
 
-import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.openshift.api.model.Build;
@@ -29,22 +27,11 @@ public class ComponentBuildAction extends BuilderAction {
     private static final Logger logger = LoggerFactory.getLogger(SyndoBuiderAction.class);
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
-
     @Override
     public void build(BuildContext context) {
         // get client from context
         final OpenShiftClient client = context.getClient();
         final String targetNamespace = context.getNamespace();
-
-        // start result
-        final BuildResult result = new BuildResult();
-
-        Namespace namespace = client.namespaces().withName(targetNamespace).get();
-        if (namespace == null) {
-            final ObjectMeta metadata = new ObjectMeta();
-            metadata.setName(targetNamespace);
-            namespace = client.namespaces().createOrReplace(new NamespaceBuilder().withMetadata(metadata).build());
-        }
 
         // this is a fake output stream used as a near target for outputting the syndo build
         final ObjectMeta isMeta = new ObjectMetaBuilder().withName(SYNDO_OUT).build();
@@ -53,10 +40,12 @@ public class ComponentBuildAction extends BuilderAction {
                 .build();
         is = client.imageStreams().inNamespace(targetNamespace).createOrReplace(is);
 
+        final String imageStreamTagName = context.getBuilderImageName();
+
         // create syndo build configuration
-        final ObjectMeta meta = new ObjectMetaBuilder().withName(SYNDO).addToLabels(CREATED_FOR, SYNDO).build();
+        final ObjectMeta meta = new ObjectMetaBuilder().withName(SYNDO).build();
         final CustomBuildStrategy customBuildStrategy = new CustomBuildStrategyBuilder()
-                .withFrom(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(SyndoBuiderAction.SYNDO_BUILDER_LATEST).build())
+                .withFrom(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(imageStreamTagName + ":latest").build())
                 .withForcePull(true)
                 .build();
         final BuildOutput output = new BuildOutputBuilder().withTo(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(SYNDO_OUT).build()).build();

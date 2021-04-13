@@ -12,14 +12,14 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ExportResourcesTest {
+public class ResourcesTest {
 
     @Test
     public void testResourceExport() throws URISyntaxException, IOException {
         final URL resourceUrl = Thread.currentThread().getContextClassLoader().getResource("export-test");
         final FileSystem exportSystem = Jimfs.newFileSystem(Configuration.unix());
         final Path exportPath = exportSystem.getPath("export-test");
-        ExportResources.exportResourceDir(resourceUrl, exportPath);
+        Resources.exportResourceDir(resourceUrl, exportPath);
         Assertions.assertTrue(Files.exists(exportSystem.getPath("export-test","test-resource.txt")));
         Assertions.assertTrue(Files.exists(exportPath.resolve("subdir/test-subresource.txt")));
     }
@@ -29,7 +29,7 @@ public class ExportResourcesTest {
         final URL resourceUrl = Thread.currentThread().getContextClassLoader().getResource("export-test/subdir");
         final FileSystem exportSystem = Jimfs.newFileSystem(Configuration.unix());
         final Path exportPath = exportSystem.getPath("subdir");
-        ExportResources.exportResourceDir(resourceUrl, exportPath);
+        Resources.exportResourceDir(resourceUrl, exportPath);
         Assertions.assertTrue(Files.exists(exportSystem.getPath("subdir/test-subresource.txt")));
     }
 }

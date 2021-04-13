@@ -1,12 +1,7 @@
 #!/bin/bash
 
-# This is the common build file that knows to use yum/dnf and what packages to install and/or repositories
-# to add/initialize depending on how it is going to install the necessary base packages. it is always intended
-# to be the common platform for RHEL/UBI/Cent installs that makes it so that syndo.sh runs the same way
-# regardless of the platform.
-
 # install additional packages
-microdnf install -y zip unzip file buildah skopeo fuse-overlayfs /etc/containers/storage.conf
+dnf install -y zip unzip file
 
 # clean up
 rm -rf /var/cache
@@ -23,13 +18,6 @@ touch /etc/subuid
 touch /etc/subgid
 chmod g=u /etc/sub*
 chmod 4755 /usr/bin/new{u,g}idmap
-
-# from rhel8/buildah
-sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' /etc/containers/storage.conf
-mkdir -p /var/lib/shared/vfs-images /var/lib/shared/vfs-layers
-touch /var/lib/shared/vfs-images/images.lock
-touch /var/lib/shared/vfs-layers/layers.lock
-sed -i -e 's|"/var/lib/shared",|#"/var/lib/shared",|' /etc/containers/storage.conf
 
 # ensure the root syndo directory is created
 mkdir -p /syndo

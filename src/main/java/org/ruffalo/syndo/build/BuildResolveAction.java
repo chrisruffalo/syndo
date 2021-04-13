@@ -8,6 +8,7 @@ import org.ruffalo.syndo.model.BuildNode;
 import org.ruffalo.syndo.model.DirSourceNode;
 import org.ruffalo.syndo.model.DockerfileSourceNode;
 import org.ruffalo.syndo.model.ImageRefSourceNode;
+import org.ruffalo.syndo.resources.Resources;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -123,16 +124,6 @@ public class BuildResolveAction extends BaseAction {
                         } else {
                             this.setFromImageRef(context.getCommandBuild(), node, context.getClient(), context.getNamespace(), fromRef);
                         }
-                        // update from ref in dockerfile contents
-                        for (int i = 0; i < dockerLines.size(); i++) {
-                            final String line = dockerLines.get(i);
-                            if (line.trim().toUpperCase().startsWith("FROM")) {
-                                final String dockerFromRef = String.format("FROM %s", node.getFromRef());
-                                dockerLines.set(i, dockerFromRef);
-                                dsNode.setDockerfileContents(dockerLines);
-                                break;
-                            }
-                        }
                     }
                 } else {
                     this.setFromImageRef(context.getCommandBuild(), node, context.getClient(), context.getNamespace(), component.getFrom());
@@ -173,6 +164,17 @@ public class BuildResolveAction extends BaseAction {
                 }
 
                 // do nothing
+            }
+        }
+
+        // now that the build order is set, hash components
+        for (DirSourceNode node : buildOrder) {
+            final String fromRef = node.getFromRef();
+            final Path dirNodeDir = node.getDirectory();
+            try {
+                node.setHash(Resources.hashPath(dirNodeDir, fromRef));
+            } catch (IOException ex) {
+                logger().error("Could not hash component {} directory {}", node.getName(), dirNodeDir);
             }
         }
 
@@ -229,14 +231,14 @@ public class BuildResolveAction extends BaseAction {
         // {repo url}/{namespace}/{image name}:{tag}
 
 
-        return null;
+        return imageRef;
     }
 
     private void setFromImageRef(final CommandBuild buildCommand, final DirSourceNode node, final OpenShiftClient client, final String namespace, final String from) {
         final String imageRef = this.resolveInputRef(buildCommand, client, namespace, from);
         if (imageRef == null) {
             this.logger().error("No image reference provided for: '{}'", from);
-        } else {
+        } else if (!imageRef.equals(from)){
             this.logger().info("Resolved '{}' for '{}'", imageRef, from);
         }
         final ImageRefSourceNode imageRefSourceNode = new ImageRefSourceNode(imageRef);

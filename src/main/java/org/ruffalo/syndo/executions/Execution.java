@@ -21,6 +21,9 @@ public abstract class Execution {
             case "build":
                 exe = new BuildExecution(command);
                 break;
+            case "bootstrap":
+                exe = new BootstrapExecution(command);
+                break;
             default:
                 exe = new NoCommandExecution(command);
         }

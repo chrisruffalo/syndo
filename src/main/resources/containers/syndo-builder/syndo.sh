@@ -14,13 +14,6 @@ export BUILDAH_ISOLATION=${BUILDAH_ISOLATION:-chroot}
 export STORAGE_DRIVER=${STORAGE_DRIVER:-vfs}
 export BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}
 
-echo "-----------------------------------------"
-echo " ENV ENV ENV ENV ENV ENV ENV ENV ENV ENV "
-echo "-----------------------------------------"
-env
-echo ""
-echo "-----------------------------------------"
-
 # update the uid/gid settings for the subuid/subgid mapping
 STARTING_ID="1000000000" # the id that will be the minimum user id for subuid
 ID_COUNT=$(cat /proc/sys/user/max_user_namespaces)
@@ -115,7 +108,8 @@ for DIR in ${DIRECTORIES[@]}; do
     EXIT_CODE=0
     if [[ "x" != "x${DOCKERFILE}" ]]; then
       (
-        buildah --authfile=/tmp/.dockercfg-pull --storage-driver vfs bud --isolation chroot -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
+        # using --from here allows us to skip messing with the FROM line of the docker file and allows us to get proper resolution of different types of artifacts the way that buildah does it (and not docker)
+        buildah --authfile=/tmp/.dockercfg-pull --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}/${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
       )
       EXIT_CODE=$?
     else
@@ -123,6 +117,7 @@ for DIR in ${DIRECTORIES[@]}; do
       CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} from --authfile=/tmp/.dockercfg-pull --tls-verify=false ${FROM_REGISTRY}/${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
         echo "No container pulled for ${FROM_IMAGE}"
+        echo "${COMPONENT} failed to pull ${FROM_REGISTRY}/${FROM_IMAGE}" >> /syndo/working/stats
         exit 1
       fi
       export CONTAINER
@@ -142,13 +137,20 @@ for DIR in ${DIRECTORIES[@]}; do
     fi
 
     if [[ "x0" == "x${EXIT_CODE}" ]]; then
-      # push the output image
+      # push the output image to the target and then the tagged location(s) for this build
       echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}"
-      ls -lah /var/lib/shared/vfs-images
       buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
+      echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}"
+      buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}
+
+      if [[ "x" != "x${HASH}" ]]; then
+        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}"
+        buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}
+      fi
 
       if [[ "x" != "x${OUTPUT_TAG}" && "latest" != "${OUTPUT_TAG}" ]]; then
-        skopeo copy --authfile=/tmp/.dockercfg-pull --dest-tls-verify=false --src-tls-verify=false docker://${OUTPUT_REGISTRY}/${OUTPUT_TARGET} docker://${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
+        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}"
+        buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
       fi
 
       # the keep file signals that we need to keep the image for dependent build steps, if this file does not exist
@@ -167,9 +169,9 @@ done
 
 # output all stats if it exists
 if [[ -f /syndo/working/stats ]]; then
-  echo "===================================="
+  echo "======================================================================"
   echo "Build Summary:"
-  echo "===================================="
+  echo "======================================================================"
   cat /syndo/working/stats
-  echo "===================================="
+  echo "======================================================================"
 fi

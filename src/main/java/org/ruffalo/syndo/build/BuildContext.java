@@ -17,6 +17,7 @@ public class BuildContext {
 
     public enum Status {
         OK,
+        DONE,
         ERROR
     }
 
@@ -41,6 +42,8 @@ public class BuildContext {
     private Path configPath;
 
     private String namespace;
+
+    private String builderImageName = "latest";
 
     public BuildContext.Status getStatus() {
         return status;
@@ -129,5 +132,13 @@ public class BuildContext {
 
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public String getBuilderImageName() {
+        return builderImageName;
+    }
+
+    public void setBuilderImageName(String builderImageName) {
+        this.builderImageName = builderImageName;
     }
 }

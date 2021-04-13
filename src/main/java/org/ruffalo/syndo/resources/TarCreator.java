@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class SyndoTarCreator {
+public class TarCreator {
 
     public static TarArchiveOutputStream createTar(final Path outputTarPath) throws IOException {
         final TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(outputTarPath)));
@@ -51,7 +51,7 @@ public class SyndoTarCreator {
     }
 
     public static void createResourceTar(final Path outputTarPath, final URL resourceUrl) throws URISyntaxException, IOException {
-        Path folder = ExportResources.resourceToPath(resourceUrl);
+        Path folder = Resources.resourceToPath(resourceUrl);
         createDirectoryTar(outputTarPath, folder);
     }
 
