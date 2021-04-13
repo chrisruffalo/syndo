@@ -5,26 +5,15 @@
 # to be the common platform for RHEL/UBI/Cent installs that makes it so that syndo.sh runs the same way
 # regardless of the platform.
 
-# here is a list of all the packages that need to be installed no matter the platform
-PACKAGES="sudo zip unzip file slirp4netns"
-
-# determine if we are using YUM or DNF
-PM="$(which dnf)"
-if [[ 0 != $? ]]; then
-  PM="$(which yum)"
-fi
-
-# todo: determine if we need to add repositories
-# this should be enabling the RHSCL and the server extras based on the release and version
-ENABLE_REPOS=""
+# enable container-tools repo
+#dnf -y module enable container-tools:rhel8
 
 # install additional packages
-${PM} update -y
-${PM} ${ENABLE_REPOS} install -y ${PACKAGES}
+dnf install -y zip unzip file #skopeo fuse-overlays
 
 # clean up
-${PM} clean all
-rm -rf /var/cache/yum
+rm -rf /var/cache
+rm -rf /var/log/dnf*
 rm -rf /var/log/yum.*
 
 # begin setup for podman/buildah on docker, all of these commands are more or less to enable the use of the

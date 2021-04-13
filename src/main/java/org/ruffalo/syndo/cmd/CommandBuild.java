@@ -21,10 +21,73 @@ public class CommandBuild extends SubCommand {
     @Parameter(description = "Path to the YAML build file that describes the build", required = true, converter = StringToPathConverter.class)
     private Path buildFile;
 
+    @Parameter(names={"--namespace", "-n"}, description = "Target OpenShift namespace that will be used for the resolution of build artifacts and as the ouput target for build items, defaults to the current namespace in use by the oc client")
+    private String namespace;
+
     @Parameter(names={"--components", "-c"}, description = "List of components or aliases to build")
     private List<String> components = new LinkedList<String>(){{
         add("all");
     }};
 
+    @Parameter(names={"--dry-run", "-D"}, description = "If true a 'dry-run' will create all output artifacts and prepare for a build but will not actually insert resources into OpenShift or initiate any builds")
+    private boolean dryRun = false;
 
+    @Parameter(names={"--tar", "-t"}, description = "File system path to output build tar to, deletes any existing tar at that path. By default the tar is built in memory")
+    private Path tarOutput;
+
+    public Path getBootstrapRoot() {
+        return bootstrapRoot;
+    }
+
+    public void setBootstrapRoot(Path bootstrapRoot) {
+        this.bootstrapRoot = bootstrapRoot;
+    }
+
+    public boolean isForceBootstrap() {
+        return forceBootstrap;
+    }
+
+    public void setForceBootstrap(boolean forceBootstrap) {
+        this.forceBootstrap = forceBootstrap;
+    }
+
+    public Path getBuildFile() {
+        return buildFile;
+    }
+
+    public void setBuildFile(Path buildFile) {
+        this.buildFile = buildFile;
+    }
+
+    public List<String> getComponents() {
+        return components;
+    }
+
+    public void setComponents(List<String> components) {
+        this.components = components;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    public void setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+    }
+
+    public Path getTarOutput() {
+        return tarOutput;
+    }
+
+    public void setTarOutput(Path tarOutput) {
+        this.tarOutput = tarOutput;
+    }
 }

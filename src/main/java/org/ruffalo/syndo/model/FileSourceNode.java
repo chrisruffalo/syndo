@@ -13,19 +13,70 @@ import java.nio.file.Path;
 public class FileSourceNode extends BuildNode {
 
     private final String name;
-    private final Path directory;
-    private final BuildNode from;
-    private final String outputRef;
+    private Path directory;
+    private BuildNode from;
+    private String dockerfile;
+    private String outputRef;
+    private boolean keep;
 
-    public FileSourceNode(final String name, final BuildNode from, final Path directory, final String outputRef) {
+    public FileSourceNode(final String name) {
         this.name = name;
-        this.from = from;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Path getDirectory() {
+        return directory;
+    }
+
+    public void setDirectory(Path directory) {
         this.directory = directory;
+    }
+
+    public String getOutputRef() {
+        return outputRef;
+    }
+
+    public void setOutputRef(String outputRef) {
         this.outputRef = outputRef;
     }
 
-    @Override
-    public BuildNode from() {
-        return this.from;
+    public boolean isKeep() {
+        return keep;
+    }
+
+    public void setKeep(boolean keep) {
+        this.keep = keep;
+    }
+
+    public BuildNode getFrom() {
+        return from;
+    }
+
+    public void setFrom(BuildNode from) {
+        this.from = from;
+    }
+
+    public String getDockerfile() {
+        return dockerfile;
+    }
+
+    public void setDockerfile(String dockerfile) {
+        this.dockerfile = dockerfile;
+    }
+
+    public String getFromRef() {
+        // cannot have a from ref and a dockerfile at the same time
+        if (this.dockerfile != null && !this.dockerfile.isEmpty()) {
+            return null;
+        }
+        if (this.from instanceof ImageRefSourceNode) {
+            return ((ImageRefSourceNode)this.from).getImageRef();
+        } else if(this.from instanceof FileSourceNode) {
+            return ((FileSourceNode)this.from).getOutputRef();
+        }
+        return null;
     }
 }

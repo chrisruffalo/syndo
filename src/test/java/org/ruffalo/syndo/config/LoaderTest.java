@@ -16,7 +16,7 @@ public class LoaderTest {
         final Path path = Paths.get(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("sample-build.yml")).toURI());
         Assertions.assertTrue(Files.exists(path));
         final Root config = Loader.read(path);
-        Assertions.assertEquals(4, config.getComponents().size());
+        Assertions.assertEquals(3, config.getComponents().size());
         Assertions.assertEquals(1, config.getAliases().size());
     }
 

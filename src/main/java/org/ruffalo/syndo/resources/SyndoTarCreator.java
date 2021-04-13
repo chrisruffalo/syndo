@@ -6,10 +6,13 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
 
 public class SyndoTarCreator {
 
@@ -63,6 +66,34 @@ public class SyndoTarCreator {
                 return super.visitFile(file, attrs);
             }
         });
+    }
+
+    public static String getMetaEnvContents(final Map<String, String> metaEnv) {
+        final StringBuilder builder = new StringBuilder();
+        metaEnv.forEach((key, value) -> {
+            if(key == null) {
+                return;
+            }
+            builder.append("export ");
+            builder.append(key.toUpperCase().trim());
+            builder.append("=");
+            builder.append(value.trim());
+            builder.append("\n");
+        });
+        return builder.toString().trim();
+    }
+
+    public static void addMetaEnvToTar(final TarArchiveOutputStream existingTar, final String metaPath, final Map<String, String> metaEnv) throws IOException {
+        if (metaEnv == null || metaEnv.isEmpty()) {
+            return;
+        }
+
+        final String metaEnvString = getMetaEnvContents(metaEnv);
+        final TarArchiveEntry entry = new TarArchiveEntry(metaPath);
+        entry.setSize(metaEnvString.length());
+        existingTar.putArchiveEntry(entry);
+        existingTar.write(metaEnvString.getBytes(StandardCharsets.UTF_8));
+        existingTar.closeArchiveEntry();
     }
 
 

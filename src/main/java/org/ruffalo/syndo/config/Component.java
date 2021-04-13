@@ -9,11 +9,11 @@ public class Component {
 
     private String from;
 
+    private String dockerfile;
+
     private String to;
 
     private String path;
-
-    private Map<String, String> metadata = new HashMap<>();
 
     public String getName() {
         return name;
@@ -47,11 +47,11 @@ public class Component {
         this.path = path;
     }
 
-    public Map<String, String> getMetadata() {
-        return metadata;
+    public String getDockerfile() {
+        return dockerfile;
     }
 
-    public void setMetadata(Map<String, String> metadata) {
-        this.metadata = metadata;
+    public void setDockerfile(String dockerfile) {
+        this.dockerfile = dockerfile;
     }
 }

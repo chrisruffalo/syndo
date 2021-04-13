@@ -1,3 +1,0 @@
-export FROM_IMAGE="registry.access.redhat.com/ubi8/ubi"
-export COMPONENT=start
-export PROJECT=syndo

@@ -1,23 +1,19 @@
 syndo:
   components:
     - name: base
-      from: openshift/eap7.3:cp4
+      from: registry.redhat.io/jboss-eap-7/eap73-openjdk8-openshift-rhel7
       to: base
-      path: target/deployments/base
+      path: base
+    - name: core
+      from: base
+      to: core
+      path: core
     - name: app
-      from: base
+      from: core
       to: app
-      path: target/deployments/app
-    - name: service
-      from: base
-      to: service
-      path: target/deployments/service
-    - name: gateway
-      from: base
-      to: gateway
-      path: target/deployments/gateway
+      path: application
   aliases:
-    - name: slim
+    - name: quick
       includes:
-        - base
+        - core
         - app

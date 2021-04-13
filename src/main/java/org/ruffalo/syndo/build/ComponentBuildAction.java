@@ -6,6 +6,8 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.openshift.api.model.*;
 import io.fabric8.openshift.client.OpenShiftClient;
+import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.io.FileUtils;
 import org.ruffalo.syndo.resources.SyndoTarCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,11 +23,11 @@ public class ComponentBuildAction extends BuilderAction {
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
     private final String targetNamespace;
-    private final Path targetDirectory;
+    private final Path targetTar;
 
-    public ComponentBuildAction(final String targetNamespace, final Path targetDirectory) {
+    public ComponentBuildAction(final String targetNamespace, final Path targetTar) {
         this.targetNamespace = targetNamespace;
-        this.targetDirectory = targetDirectory;
+        this.targetTar = targetTar;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class ComponentBuildAction extends BuilderAction {
         // create syndo build configuration
         final ObjectMeta meta = new ObjectMetaBuilder().withName(SYNDO).addToLabels(CREATED_FOR, SYNDO).build();
         final CustomBuildStrategy customBuildStrategy = new CustomBuildStrategyBuilder()
-                .withFrom(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(SYNDO).withName(SyndoBuiderAction.SYNDO_BUILDER_LATEST).build())
+                .withFrom(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(SyndoBuiderAction.SYNDO_BUILDER_LATEST).build())
                 .withForcePull(true)
                 .build();
         final BuildOutput output = new BuildOutputBuilder().withTo(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(SYNDO_OUT).build()).build();
@@ -66,37 +68,17 @@ public class ComponentBuildAction extends BuilderAction {
                 .build();
         config = client.buildConfigs().inNamespace(targetNamespace).createOrReplace(config);
 
-        // tar up sample build for use
-        final Path buildDir = this.targetDirectory.normalize().toAbsolutePath();
-        final Path tarFile = this.fs().getPath("/components.tar").normalize().toAbsolutePath();
-        try {
-            SyndoTarCreator.createDirectoryTar(
-                tarFile,
-                buildDir
-            );
-            logger.info("Created output archive '{}' from {}", tarFile, buildDir);
-        } catch (IOException e) {
-            logger.error("Could not create distribution tar: {}", e.getMessage());
-            result.setStatus(BuildResult.Status.FAILED);
-            return result;
-        }
-
         final Build build;
         try {
+            logger.info("Building from tar: {} ({})", this.targetTar, FileUtils.byteCountToDisplaySize(Files.size(this.targetTar)));
             build = client.buildConfigs()
                     .inNamespace(targetNamespace)
                     .withName(config.getMetadata().getName())
-                    .instantiateBinary().fromInputStream(Files.newInputStream(tarFile));
+                    .instantiateBinary().fromInputStream(Files.newInputStream(this.targetTar));
         } catch (IOException e) {
             logger.error("Could not start build: {}", e.getMessage());
             result.setStatus(BuildResult.Status.FAILED);
             return result;
-        }
-
-        try {
-            Files.deleteIfExists(tarFile);
-        } catch (IOException ex) {
-            // nothing to do if this fails, just move on
         }
 
         boolean syndoBuildSuccess;

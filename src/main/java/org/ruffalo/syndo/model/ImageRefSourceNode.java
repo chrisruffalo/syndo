@@ -11,16 +11,15 @@ package org.ruffalo.syndo.model;
  *
  * None of the work should be done inside the actual build pod.
  */
-public class ContainerSourceNode extends BuildNode {
+public class ImageRefSourceNode extends BuildNode {
 
     private final String imageRef;
 
-    public ContainerSourceNode(final String imageRef) {
+    public ImageRefSourceNode(final String imageRef) {
         this.imageRef = imageRef;
     }
 
-    @Override
-    public BuildNode from() {
-        return null;
+    public String getImageRef() {
+        return imageRef;
     }
 }

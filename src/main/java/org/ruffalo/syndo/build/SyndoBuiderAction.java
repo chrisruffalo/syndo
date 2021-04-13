@@ -30,7 +30,9 @@ public class SyndoBuiderAction extends BuilderAction {
     public static final String SYNDO_BUILDER_LATEST = SYNDO_BUILDER + ":latest";
 
     private final String targetNamespace;
-    private Path bootstrapDirectory;
+    private final Path bootstrapDirectory;
+
+    private boolean forceBuild = false;
 
     public SyndoBuiderAction(final String targetNamespace, final Path bootstrapDirectory) {
         if (bootstrapDirectory == null || !Files.exists(bootstrapDirectory)) {
@@ -40,9 +42,13 @@ public class SyndoBuiderAction extends BuilderAction {
                 throw new RuntimeException("Could not load internal resource path (" + BOOTSTRAP_RESOURCE_PATH + ") when bootstrap directory is null or unavailable", e);
             }
         } else {
-            this.bootstrapDirectory = bootstrapDirectory;
+            this.bootstrapDirectory = bootstrapDirectory.normalize().toAbsolutePath();
         }
         this.targetNamespace = targetNamespace;
+    }
+
+    public void setForceBuild(boolean forceBuild) {
+        this.forceBuild = forceBuild;
     }
 
     @Override
@@ -58,7 +64,8 @@ public class SyndoBuiderAction extends BuilderAction {
         final String namespaceName = namespace.getMetadata().getName();
 
         final ImageStreamTag ist = client.imageStreamTags().inNamespace(namespaceName).withName(SYNDO_BUILDER_LATEST).get();
-        if (ist == null) {
+        if (ist == null || forceBuild) {
+
             // ensure that the target image stream exists
             final ObjectMeta isMeta = new ObjectMetaBuilder().withName(SYNDO_BUILDER).build();
             ImageStream is = new ImageStreamBuilder()
@@ -67,9 +74,18 @@ public class SyndoBuiderAction extends BuilderAction {
             is = client.imageStreams().inNamespace(namespaceName).createOrReplace(is);
 
             // get dockerfile resource
-            final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("containers/syndo-builder/Dockerfile");
-            if (stream == null) {
-                logger.error("Could not find embedded dockerfile for syndo-builder");
+            final Path bootstrapDockerFile = this.bootstrapDirectory.resolve("Dockerfile");
+            if (!Files.exists(bootstrapDockerFile)) {
+                logger.error("Dockerfile not found at {}", bootstrapDockerFile);
+                result.setStatus(BuildResult.Status.FAILED);
+                return result;
+            }
+            logger.info("Bootstrap syndo-builder from: {}", this.bootstrapDirectory);
+
+            final InputStream stream;
+            try {
+                stream = Files.newInputStream(bootstrapDockerFile);
+            } catch (IOException e) {
                 result.setStatus(BuildResult.Status.FAILED);
                 return result;
             }

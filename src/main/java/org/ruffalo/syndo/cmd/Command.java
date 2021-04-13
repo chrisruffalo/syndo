@@ -86,6 +86,7 @@ public class Command {
                 .addObject(command)
                 .addCommand("build", command.getBuild())
                 .addCommand("export", command.getExport())
+                .programName("syndo")
                 .build();
 
         commander.parse(args);
