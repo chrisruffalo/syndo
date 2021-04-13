@@ -52,8 +52,9 @@ public class SyndoBuiderAction extends BuilderAction {
     }
 
     @Override
-    public BuildResult build(OpenShiftClient client) {
-        final BuildResult result = new BuildResult();
+    public void build(BuildContext context) {
+        // get client from context
+        final OpenShiftClient client = context.getClient();
 
         Namespace namespace = client.namespaces().withName(this.targetNamespace).get();
         if (namespace == null) {
@@ -77,8 +78,8 @@ public class SyndoBuiderAction extends BuilderAction {
             final Path bootstrapDockerFile = this.bootstrapDirectory.resolve("Dockerfile");
             if (!Files.exists(bootstrapDockerFile)) {
                 logger.error("Dockerfile not found at {}", bootstrapDockerFile);
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
             logger.info("Bootstrap syndo-builder from: {}", this.bootstrapDirectory);
 
@@ -86,16 +87,16 @@ public class SyndoBuiderAction extends BuilderAction {
             try {
                 stream = Files.newInputStream(bootstrapDockerFile);
             } catch (IOException e) {
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
             final String dockerFileContentsString;
             try {
                 dockerFileContentsString = new String(IOUtils.toByteArray(stream));
             } catch (IOException e) {
                 logger.error("Could not read embedded dockerfile for syndo-builder: {}", e.getMessage());
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
 
             // create syndo build configuration
@@ -120,8 +121,8 @@ public class SyndoBuiderAction extends BuilderAction {
                 SyndoTarCreator.createDirectoryTar(tarFile, this.bootstrapDirectory);
             } catch (IOException e) {
                 logger.error("Could not create tar resource: {}", e.getMessage());
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
 
             // create build from uploaded tar file
@@ -133,8 +134,8 @@ public class SyndoBuiderAction extends BuilderAction {
                         .instantiateBinary().fromInputStream(Files.newInputStream(tarFile));
             } catch (KubernetesClientException | IOException ex) {
                 logger.error("Could not start build: {}", ex.getMessage());
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
 
             try {
@@ -148,15 +149,15 @@ public class SyndoBuiderAction extends BuilderAction {
                 bootstrapSucceeded = waitAndWatchBuild(namespaceName, client, build, logger);
             } catch (Exception e) {
                 logger.error("Could not wait for build to complete: {}", e.getMessage());
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
             if (!bootstrapSucceeded) {
                 logger.error("Could not build the syndo build container, cannot proceed");
-                result.setStatus(BuildResult.Status.FAILED);
-                return result;
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
             }
         }
-        return result;
+
     }
 }

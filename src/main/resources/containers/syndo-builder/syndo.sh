@@ -129,13 +129,17 @@ for DIR in ${DIRECTORIES[@]}; do
 
       # now actually run the build script
       (
+        chmod +x ${DIR}/build.sh
         set -e
-        $(which bash) ${DIR}/build.sh
+        set -x
+        ${DIR}/build.sh
       )
       EXIT_CODE=$?
 
       # commit the container and then remove the container
       buildah commit ${CONTAINER} ${OUTPUT_TARGET}
+
+      # the container itself always needs to be removed as well, no longer needed after commit
       buildah rm ${CONTAINER}
     fi
 
@@ -153,8 +157,6 @@ for DIR in ${DIRECTORIES[@]}; do
       # output stats time
       echo "${COMPONENT} finished in $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     else
-      # clean up and move on
-      buildah rm ${CONTAINER}
       echo "${COMPONENT} failed after $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     fi
   )

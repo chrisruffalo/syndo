@@ -4,15 +4,20 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public class SyndoTarCreator {
 
@@ -24,10 +29,22 @@ public class SyndoTarCreator {
     }
 
     public static void addToTar(final TarArchiveOutputStream tar, final Path fileToAdd, final String entryName) throws IOException {
+        try (final InputStream stream = Files.newInputStream(fileToAdd)) {
+            addToTar(tar, stream, Files.size(fileToAdd), entryName);
+        }
+    }
+
+    public static void addToTar(final TarArchiveOutputStream tar, final byte[] contents, final String entryName) throws IOException {
+        try (final InputStream stream = new ByteArrayInputStream(contents)) {
+            addToTar(tar, stream, contents.length, entryName);
+        }
+    }
+
+    public static void addToTar(final TarArchiveOutputStream tar, final InputStream fileToAdd, final long size, final String entryName) throws IOException {
         final TarArchiveEntry entry = new TarArchiveEntry(entryName);
-        entry.setSize(Files.size(fileToAdd));
+        entry.setSize(size);
         tar.putArchiveEntry(entry);
-        IOUtils.copy(Files.newInputStream(fileToAdd), tar);
+        IOUtils.copy(fileToAdd, tar);
         tar.closeArchiveEntry();
     }
 
@@ -50,6 +67,10 @@ public class SyndoTarCreator {
     }
 
     public static void addPrefixedDirectoryToTar(final TarArchiveOutputStream existingTar, final Path directoryPath, final String prefix) throws IOException {
+        addPrefixedDirectoryToTar(existingTar, directoryPath, prefix, Collections.emptySet());
+    }
+
+    public static void addPrefixedDirectoryToTar(final TarArchiveOutputStream existingTar, final Path directoryPath, final String prefix, final Set<String> excludedFiles) throws IOException {
         Files.walkFileTree(directoryPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -59,8 +80,15 @@ public class SyndoTarCreator {
                     entryPath = Paths.get(prefix).resolve(entryPath);
                 }
 
-                // add entry name to tar
-                addToTar(existingTar, file, entryPath.toString());
+                final String entry = entryPath.toString();
+
+                // filter out excluded files
+                if (!excludedFiles.contains(entry)) {
+                    // add entry name to tar
+                    addToTar(existingTar, file, entry);
+                } else {
+                    LoggerFactory.getLogger(SyndoTarCreator.class).info("skipping file: {}", entry);
+                }
 
                 // continue file visit
                 return super.visitFile(file, attrs);

@@ -31,7 +31,10 @@ public class ComponentBuildAction extends BuilderAction {
     }
 
     @Override
-    public BuildResult build(OpenShiftClient client) {
+    public void build(BuildContext context) {
+        // get client from context
+        final OpenShiftClient client = context.getClient();
+
         // start result
         final BuildResult result = new BuildResult();
 
@@ -77,8 +80,8 @@ public class ComponentBuildAction extends BuilderAction {
                     .instantiateBinary().fromInputStream(Files.newInputStream(this.targetTar));
         } catch (IOException e) {
             logger.error("Could not start build: {}", e.getMessage());
-            result.setStatus(BuildResult.Status.FAILED);
-            return result;
+            context.setStatus(BuildContext.Status.ERROR);
+            return;
         }
 
         boolean syndoBuildSuccess;
@@ -86,8 +89,8 @@ public class ComponentBuildAction extends BuilderAction {
             syndoBuildSuccess = waitAndWatchBuild(targetNamespace, client, build, logger);
         } catch (Exception e) {
             logger.error("Could not wait for component build to complete: {}", e.getMessage());
-            result.setStatus(BuildResult.Status.FAILED);
-            return result;
+            context.setStatus(BuildContext.Status.ERROR);
+            return;
         }
 
         // delete fake output image stream since it was just used to temporarily provide output credentials for the
@@ -100,8 +103,7 @@ public class ComponentBuildAction extends BuilderAction {
             logger.info("Build {} succeeded", build.getMetadata().getName());
         } else {
             logger.error("Build {} failed", build.getMetadata().getName());
-            result.setStatus(BuildResult.Status.FAILED);
+            context.setStatus(BuildContext.Status.ERROR);
         }
-        return result;
     }
 }

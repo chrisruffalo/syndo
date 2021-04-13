@@ -10,16 +10,15 @@ import java.nio.file.Path;
  * Another way to think of this is the preparation of local files to be built (tasks) that will be sent to the actual
  * syndo build image.
  */
-public class FileSourceNode extends BuildNode {
+public class DirSourceNode extends BuildNode {
 
     private final String name;
     private Path directory;
     private BuildNode from;
-    private String dockerfile;
     private String outputRef;
     private boolean keep;
 
-    public FileSourceNode(final String name) {
+    public DirSourceNode(final String name) {
         this.name = name;
     }
 
@@ -59,23 +58,11 @@ public class FileSourceNode extends BuildNode {
         this.from = from;
     }
 
-    public String getDockerfile() {
-        return dockerfile;
-    }
-
-    public void setDockerfile(String dockerfile) {
-        this.dockerfile = dockerfile;
-    }
-
     public String getFromRef() {
-        // cannot have a from ref and a dockerfile at the same time
-        if (this.dockerfile != null && !this.dockerfile.isEmpty()) {
-            return null;
-        }
         if (this.from instanceof ImageRefSourceNode) {
             return ((ImageRefSourceNode)this.from).getImageRef();
-        } else if(this.from instanceof FileSourceNode) {
-            return ((FileSourceNode)this.from).getOutputRef();
+        } else if(this.from instanceof DirSourceNode) {
+            return ((DirSourceNode)this.from).getOutputRef();
         }
         return null;
     }

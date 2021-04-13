@@ -1,7 +1,5 @@
 package org.ruffalo.syndo.build;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
 import io.fabric8.openshift.api.model.Build;
@@ -11,17 +9,14 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystem;
 import java.util.Map;
 
-public abstract class BuilderAction implements Action {
+public abstract class BuilderAction extends BaseAction {
 
     public static final String SYNDO = "syndo";
 
     public static final String LABEL_PREFIX = "syndo/";
     public static final String CREATED_FOR = LABEL_PREFIX + "created-for";
-
-    public static final FileSystem memorySystem = Jimfs.newFileSystem(Configuration.unix());
 
     protected boolean waitForStatus(final String statusToWaitFor, final String namespaceName, final OpenShiftClient client, final String podName, final Logger logger) {
         Pod pod = client.pods().inNamespace(namespaceName).withName(podName).get();
@@ -99,10 +94,6 @@ public abstract class BuilderAction implements Action {
 
         // if the build did not succeed quit
         return succeeded;
-    }
-
-    protected FileSystem fs() {
-        return memorySystem;
     }
 
 }
