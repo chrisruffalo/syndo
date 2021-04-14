@@ -18,6 +18,7 @@ public class BuildContext {
     public enum Status {
         OK,
         DONE,
+        INVALID,
         ERROR
     }
 

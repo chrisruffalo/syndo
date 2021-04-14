@@ -16,9 +16,6 @@ public class CommandBootstrap extends CommandOpenShift {
     @Parameter(names={"--force-bootstrap", "-F"}, description = "Setting this option to true forces the build of the Syndo builder container even if the proper version is already present")
     private boolean forceBootstrap;
 
-    @Parameter(names={"--dry-run", "-D"}, description = "If true a 'dry-run' will create all output artifacts and prepare for a build but will not actually insert resources into OpenShift or initiate any builds")
-    private boolean dryRun = false;
-
     @Parameter(names={"--bootstrap-tar", "-T"}, description = "File system path to output bootstrap tar to, deletes any existing tar at that path. By default the tar is built in memory")
     private Path bootstrapTarOutput;
 
@@ -36,14 +33,6 @@ public class CommandBootstrap extends CommandOpenShift {
 
     public void setForceBootstrap(boolean forceBootstrap) {
         this.forceBootstrap = forceBootstrap;
-    }
-
-    public boolean isDryRun() {
-        return dryRun;
-    }
-
-    public void setDryRun(boolean dryRun) {
-        this.dryRun = dryRun;
     }
 
     public Path getBootstrapTarOutput() {

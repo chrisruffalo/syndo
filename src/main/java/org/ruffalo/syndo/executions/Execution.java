@@ -1,10 +1,18 @@
 package org.ruffalo.syndo.executions;
 
 import org.ruffalo.syndo.cmd.Command;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Execution {
 
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     public abstract ExecutionResult execute();
+
+    protected Logger logger() {
+        return this.logger;
+    }
 
     public static Execution get(Command command) {
         String parsed = command.getParsedCommand();

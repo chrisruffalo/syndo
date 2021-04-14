@@ -31,9 +31,12 @@ public class Resources {
 
     /**
      * Produces a consistent hash of the source path by finding all of the files in the path, then sorting
-     * the files by name, and then hashing the contents of each file. By performing this the same way each
-     * time the files will be hashed in the same order unless a new file is added which would, again, change
-     * the hash. If the files do not change it should always produce the same output.
+     * the files by name, and then hashing the name and the contents of each file. The file name is included
+     * because moving a file should trigger a rebuild for correctness even if nothing else changes.
+     *
+     * By performing this the same way each time the files will be hashed in the same order unless a new
+     * file is added which would change the hash. If the files do not change it should always produce the
+     * same output.
      *
      * @param sourcePath the source path to digest if a single file the file will be hashed, if a directory the entire tree will be hashed
      * @param salts inputs to salt the data with so that it changes if something else outside of the dir changes
@@ -76,6 +79,9 @@ public class Resources {
             if (path == null) {
                 continue;
             }
+            // first file name
+            digest.update(path.getFileName().toString().getBytes(StandardCharsets.UTF_8));
+            // then hash of file
             digest.update(Files.readAllBytes(path));
         }
 

@@ -2,6 +2,7 @@ package org.ruffalo.syndo.config;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.ruffalo.syndo.exceptions.SyndoException;
 
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -12,7 +13,7 @@ import java.util.Objects;
 public class LoaderTest {
 
     @Test
-    public void testLoad() throws URISyntaxException {
+    public void testLoad() throws URISyntaxException, SyndoException {
         final Path path = Paths.get(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("sample-build.yml")).toURI());
         Assertions.assertTrue(Files.exists(path));
         final Root config = Loader.read(path);

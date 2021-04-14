@@ -17,6 +17,9 @@ public class CommandOpenShift extends SubCommand {
     @Parameter(names={"--openshift-config-path", "-O"}, description = "Path to the directory where the kube authentication/configuration file can be found", listConverter = StringToPathListConverter.class)
     private List<Path> openshiftConfigSearchPaths = getDefaultSearchPaths();
 
+    @Parameter(names={"--dry-run", "-D"}, description = "If true a 'dry-run' will create all output artifacts and prepare for a build but will not actually insert resources into OpenShift or initiate any builds")
+    private boolean dryRun = false;
+
     public String getNamespace() {
         return namespace;
     }
@@ -31,6 +34,14 @@ public class CommandOpenShift extends SubCommand {
 
     public void setOpenshiftConfigSearchPaths(List<Path> openshiftConfigSearchPaths) {
         this.openshiftConfigSearchPaths = openshiftConfigSearchPaths;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    public void setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
     }
 
     private static List<Path> getDefaultSearchPaths() {

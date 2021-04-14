@@ -3,6 +3,7 @@ package org.ruffalo.syndo.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.ruffalo.syndo.exceptions.SyndoException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * This is the helper class that provides a common way to read a configuration yaml.
+ */
 public class Loader {
 
     private static final Logger logger = LoggerFactory.getLogger(Loader.class);
@@ -33,17 +37,27 @@ public class Loader {
         return mapper;
     }
 
-    public static Root read(final Path yaml) {
+    /**
+     * Given a path to a YAML file, read that YAML file as a Root object.
+     *
+     * @param yaml the path to the yaml file
+     * @return if the configuration file can be found an object representing the config file will be returned,
+     *         otherwise if the file is missing or not correct a null configuration object will be returned.
+     */
+    public static Root read(final Path yaml) throws SyndoException  {
         // return empty root if no configuration given or the configuration file does not exist
-        if (yaml == null || !Files.exists(yaml)) {
-            return new Root();
+        if (yaml == null) {
+            throw new SyndoException("Cannot load yaml file for a null path");
+        }
+
+        if (!Files.exists(yaml)) {
+            throw new SyndoException(String.format("No configuration yaml found at path %s", yaml));
         }
 
         try {
             return mapper().readValue(Files.newInputStream(yaml), Root.class);
         } catch (IOException e) {
-            logger.error("Could not load Syndo configuration: {}", e.getMessage());
-            return new Root();
+            throw new SyndoException(String.format("Could not load Syndo configuration file %s: %s", yaml, e.getMessage()));
         }
     }
 

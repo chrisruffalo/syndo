@@ -17,6 +17,7 @@ public class DirSourceNode extends BuildNode {
     private BuildNode from;
     private String outputRef;
     private String hash;
+    private String script = "build.sh";
     private boolean keep;
 
     public DirSourceNode(final String name) {
@@ -72,6 +73,14 @@ public class DirSourceNode extends BuildNode {
 
     public void setFrom(BuildNode from) {
         this.from = from;
+    }
+
+    public String getScript() {
+        return script;
+    }
+
+    public void setScript(String script) {
+        this.script = script;
     }
 
     public String getFromRef() {

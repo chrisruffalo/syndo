@@ -15,8 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +30,9 @@ public class BuildResolveAction extends BaseAction {
     @Override
     public void build(BuildContext context) {
 
-
         // build everything into the node map
-        final Map<String, String> outputRefResolveMap = new HashMap<>();
-        final Map<String, DirSourceNode> sourceNodeMap = new HashMap<>();
+        final Map<String, String> outputRefResolveMap = new LinkedHashMap<>();
+        final Map<String, DirSourceNode> sourceNodeMap = new LinkedHashMap<>();
         context.getComponentMap().forEach((key, component) -> {
             DirSourceNode node = null;
             if (component.getDockerfile() != null && !component.getDockerfile().isEmpty()) {
@@ -44,19 +43,37 @@ public class BuildResolveAction extends BaseAction {
                 node = new DirSourceNode(component.getName());
             }
 
-            // todo: maybe do a better job of resolving the target path
+            // resolve the component path
             Path componentDir = Paths.get(component.getPath());
             if (!componentDir.isAbsolute()) {
                 if (!Files.exists(componentDir)) {
                     // try and resolve relative to build yaml
                     componentDir = context.getConfigPath().getParent().resolve(componentDir).normalize().toAbsolutePath();
                 }
+                if (!Files.exists(componentDir)) {
+                    // try and resolve relative to working dir
+                    final Path workingDir = Paths.get(System.getProperty("user.dir"));
+                    componentDir = workingDir.resolve(componentDir).normalize().toAbsolutePath();
+                }
             }
             if (!Files.exists(componentDir)) {
-                logger().error("Could not resolve directory '{}' for component '{}', skipping", component.getPath(), component.getName());
+                logger().error("Could not find directory '{}' for component '{}', skipping", component.getPath(), component.getName());
                 return;
             }
             node.setDirectory(componentDir);
+
+            // resolve the build script
+            if (!(node instanceof DockerfileSourceNode)) {
+                if (component.getScript() != null && !component.getScript().isEmpty()) {
+                    node.setScript(component.getScript());
+                }
+                final String script = node.getScript();
+                final Path scriptPath = componentDir.resolve(script);
+                if (!Files.exists(scriptPath)) {
+                    logger().error("Could not find build script '{}' for component '{}', skipping", node.getScript(), component.getName());
+                    return;
+                }
+            }
 
             // todo: do a better job of resolving the output reference
             String to = component.getTo();
@@ -80,7 +97,7 @@ public class BuildResolveAction extends BaseAction {
 
             if (from == null) {
                 // set the dockerfile path on the component using the files in the resolved node directory
-                if (node instanceof DockerfileSourceNode) {
+                if (node instanceof DockerfileSourceNode && (component.getFrom() == null || component.getFrom().isEmpty())) {
                     final DockerfileSourceNode dsNode = (DockerfileSourceNode) node;
                     final Path dockerfilePath = node.getDirectory().resolve(dsNode.getDockerfile()).normalize().toAbsolutePath();
                     if (!Files.exists(dockerfilePath)) {
@@ -141,7 +158,7 @@ public class BuildResolveAction extends BaseAction {
         // ensure that the build list is the nodes, in order
         final List<DirSourceNode> buildOrder = new LinkedList<>();
         while(!sourceNodeMap.isEmpty()) {
-            final Set<Map.Entry<String, DirSourceNode>> entrySet = new HashSet<>(sourceNodeMap.entrySet());
+            final Set<Map.Entry<String, DirSourceNode>> entrySet = new LinkedHashSet<>(sourceNodeMap.entrySet());
             for (Map.Entry<String, DirSourceNode> entry : entrySet) {
                 final DirSourceNode node = entry.getValue();
                 final BuildNode from = node.getFrom();

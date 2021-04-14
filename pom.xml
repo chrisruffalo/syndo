@@ -11,6 +11,10 @@
     <name>Syndo</name>
     <description>From the greek 'συνδώ' which means 'interconnect' or 'link'</description>
 
+    <scm>
+        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
+    </scm>
+
     <properties>
         <version.fabric8.kubernetes-client>5.2.1</version.fabric8.kubernetes-client>
 

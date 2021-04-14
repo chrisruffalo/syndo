@@ -11,7 +11,7 @@
 # of the image and is really only needed at the tool's runtime. setting them here puts them squarely in the responsibility
 # of this script
 export BUILDAH_ISOLATION=${BUILDAH_ISOLATION:-chroot}
-export STORAGE_DRIVER=${STORAGE_DRIVER:-vfs}
+export STORAGE_DRIVER=${STORAGE_DRIVER:-overlay}
 export BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}
 
 # update the uid/gid settings for the subuid/subgid mapping
@@ -69,9 +69,10 @@ for DIR in ${DIRECTORIES[@]}; do
       DOCKERFILE=$(realpath "${DIR}/${DOCKERFILE}")
     fi
 
-    # make sure a build.sh build script exists in the directory
-    if [[ "x" == "x${DOCKERFILE}" && ! -f ${DIR}/build.sh ]]; then
-      echo "Could not build in ${DIR}, no build.sh exists"
+    # make sure a build.sh build script exists in the directory or there is a dockerfile
+    BUILD_SCRIPT=${BUILD_SCRIPT:-build.sh}
+    if [[ "x" == "x${DOCKERFILE}" && ! -f ${DIR}/${BUILD_SCRIPT} ]]; then
+      echo "Could not build in ${DIR}, no ${BUILD_SCRIPT} exists"
       exit 1
     elif [[ "x" != "x${DOCKERFILE}" && ! -f "${DOCKERFILE}" ]]; then
       echo "Dockerfile ${DOCKERFILE} specified but does not exist"
@@ -113,7 +114,7 @@ for DIR in ${DIRECTORIES[@]}; do
       )
       EXIT_CODE=$?
     else
-      # now actually start the container / pull / open the container context with buildah
+      # pull and create the container context with buildah
       CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} --authfile=/tmp/.dockercfg-pull --tls-verify=false from ${FROM_REGISTRY}/${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
         echo "No container pulled for ${FROM_IMAGE}"
@@ -128,7 +129,7 @@ for DIR in ${DIRECTORIES[@]}; do
 
       # now actually run the build script with command tracing and by bubbling out errors
       (
-        bash -v -e ${DIR}/build.sh
+        bash -v -e ${DIR}/${BUILD_SCRIPT}
       )
       EXIT_CODE=$?
 

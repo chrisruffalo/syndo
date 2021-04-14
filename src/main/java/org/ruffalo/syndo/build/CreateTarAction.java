@@ -35,6 +35,7 @@ public class CreateTarAction extends BaseAction {
                 meta.put("COMPONENT", sourceNode.getName());
                 meta.put("OUTPUT_TARGET", sourceNode.getOutputRef());
                 meta.put("HASH", sourceNode.getHash());
+                meta.put("BUILD_SCRIPT", sourceNode.getScript());
 
                 if(sourceNode instanceof DockerfileSourceNode) {
                     meta.put("DOCKERFILE", ((DockerfileSourceNode)sourceNode).getDockerfile());
