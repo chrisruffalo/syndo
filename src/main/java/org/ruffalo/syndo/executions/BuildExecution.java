@@ -13,6 +13,7 @@ import org.ruffalo.syndo.build.BuildContext;
 import org.ruffalo.syndo.build.BuildPrepareAction;
 import org.ruffalo.syndo.build.BuildResolveAction;
 import org.ruffalo.syndo.build.ComponentBuildAction;
+import org.ruffalo.syndo.build.ComponentFilterAction;
 import org.ruffalo.syndo.build.CreateTarAction;
 import org.ruffalo.syndo.build.HashFilterAction;
 import org.ruffalo.syndo.build.SyndoBuiderAction;
@@ -149,6 +150,9 @@ public class BuildExecution extends Execution {
             // resolve artifacts inputs/outputs and build order from dependencies
             final BuildResolveAction resolveAction = new BuildResolveAction();
             actions.add(resolveAction);
+
+            final ComponentFilterAction componentFilterAction = new ComponentFilterAction();
+            actions.add(componentFilterAction);
 
             // add when not forcing the build
             if (!buildCommand.isForce()) {

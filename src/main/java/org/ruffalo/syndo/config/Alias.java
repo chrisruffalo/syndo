@@ -1,12 +1,13 @@
 package org.ruffalo.syndo.config;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class Alias {
 
     private String name;
 
-    private List<String> includes;
+    private List<String> components = new LinkedList<>();
 
     public String getName() {
         return name;
@@ -16,11 +17,11 @@ public class Alias {
         this.name = name;
     }
 
-    public List<String> getIncludes() {
-        return includes;
+    public List<String> getComponents() {
+        return components;
     }
 
-    public void setIncludes(List<String> includes) {
-        this.includes = includes;
+    public void setComponents(List<String> components) {
+        this.components = components;
     }
 }

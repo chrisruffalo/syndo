@@ -18,7 +18,13 @@ syndo:
       dockerfile: subdir/Dockerfile
       path: docker
   aliases:
+    # an alias that lets you specify a build like "-c slim" that will expand to building the base and app components
     - name: slim
-      includes:
+      # components to include as part of the alias
+      components:
         - base
         - app
+      # transient builds will cause the inclusion of components that other components depend on
+      # if transient is set to "false" then the latest build artifacts will be used or an error
+      # will occur if the component is not available
+      transient: true
