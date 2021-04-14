@@ -7,22 +7,22 @@ Syndo also aims to be efficient meaning that it builds more than one image in a 
 the need for pulling images to the build pod every time a new OpenShift build is started.
 
 ## Features
-* Creates custom build image as needed
+* Creates custom build image and other OpenShift resources (ImageStreams) as needed
 * Supports serialized buildah or Dockerfile (buildah bud) builds
 * FROM/required builds are resolved at each step
 * Resolves component build order and builds dependent components after their dependencies
 * Works within a single namespace to produce output images
-* Designed to minimize image pulls and pushes
-* ImageStreams and ImageStreamTags are managed by Syndo and do not need to be managed directly
+* Minimize pushes and pulls
+* Allows for selectively building components and resolves component dependencies
 
-## Compatibility
-* OpenShift 4.7+
+## Requirements
 * JDK 8 (for the client)
+* OpenShift 4.7+
+* CustomBuildStrategy enabled in OpenShift for the user executing Syndo
 
 ## Installing Syndo
 Installing Syndo requires that you [enable custom build configurations](https://docs.openshift.com/container-platform/4.7/cicd/builds/securing-builds-by-strategy.html#securing-builds-by-strategy) 
-in your cluster. Your cluster also needs to have access to the Syndo build image which can be built and pushed into 
-the cluster from the `containers` directory or from an upstream registry.
+in your cluster. Syndo will create all the artifacts it needs in the target namespace.
 
 All the cluster resources required to build your artifacts will be published and managed by the Syndo binary.
 
@@ -36,3 +36,45 @@ The Syndo build proceeds in three phases:
 To use Syndo requires a build yaml file. The build yaml lays out the location of the artifacts that will be used
 to construct the output container image. An [example file](./sample-build/build.yml) is included with
 comments to give some idea how a build might proceed.
+
+To build with syndo:
+```bash
+[]$ java -jar syndo.jar build sample-build/build.yml
+```
+
+As each component is built the image source/from name and contents of the build directory will be used to make a sha256
+hash that identifies the output image. This allows the build to skip subsequent builds for that component as long as the
+contents (or the source image) are the same. In order to force a build use the `--force` option.
+```bash
+[]$ java -jar syndo.jar build sample-build/build.yml
+```
+
+When Syndo creates its custom build image it will create a BuildConfig, Build, and ImageStream in the namespace that is targeted by Syndo. 
+Subsequent builds will reuse the same build image.  For more information about what is in the build image and how to customize it
+see the section `Customizing Syndo`.
+
+## Customizing Syndo
+Syndo can be customized to do pretty much anything you need. It is based on the `quay.io/containers/buildah` image to ensure that
+the most up-to-date buildah features are available. 
+
+To customize Syndo start by exporting the content:
+```bash
+[]$ java -jar syndo.jar export syndo-build-root
+```
+
+The contents of the `syndo-build-root` directory are the artifacts that are used for the Syndo build. You can modify these artifacts
+at any time and use it as the root for your syndo build.
+```bash
+[]$ java -jar syndo.jar build sample-build/build.yml --bootstrap-path syndo-build-root 
+```
+
+If you just want to build the syndo image:
+```bash
+[]$ java -jar syndo.jar bootstrap --bootstrap-path syndo-build-root
+```
+
+Keep in mind that the results of bootstrap builds are also cached and to may need to force a bootstrap:
+```bash
+[]$ java -jar syndo.jar bootstrap --bootstrap-path syndo-build-root --force-bootstrap
+```
+

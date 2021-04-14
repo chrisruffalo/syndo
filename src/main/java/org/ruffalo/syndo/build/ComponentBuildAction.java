@@ -90,7 +90,7 @@ public class ComponentBuildAction extends BuilderAction {
         }
 
         if (syndoBuildSuccess) {
-            logger.info("Build {} succeeded", build.getMetadata().getName());
+            logger.info("Build {} finished", build.getMetadata().getName());
         } else {
             logger.error("Build {} failed", build.getMetadata().getName());
             context.setStatus(BuildContext.Status.ERROR);

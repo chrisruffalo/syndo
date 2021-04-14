@@ -109,12 +109,12 @@ for DIR in ${DIRECTORIES[@]}; do
     if [[ "x" != "x${DOCKERFILE}" ]]; then
       (
         # using --from here allows us to skip messing with the FROM line of the docker file and allows us to get proper resolution of different types of artifacts the way that buildah does it (and not docker)
-        buildah --authfile=/tmp/.dockercfg-pull --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}/${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
+        buildah --authfile=/tmp/.dockercfg-pull --tls-verify=false --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}/${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
       )
       EXIT_CODE=$?
     else
       # now actually start the container / pull / open the container context with buildah
-      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} from --authfile=/tmp/.dockercfg-pull --tls-verify=false ${FROM_REGISTRY}/${FROM_IMAGE})
+      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} --authfile=/tmp/.dockercfg-pull --tls-verify=false from ${FROM_REGISTRY}/${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
         echo "No container pulled for ${FROM_IMAGE}"
         echo "${COMPONENT} failed to pull ${FROM_REGISTRY}/${FROM_IMAGE}" >> /syndo/working/stats
