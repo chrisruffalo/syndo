@@ -1,0 +1,12 @@
+{
+  "resources":{
+  "includes":[
+    {"pattern":"\\QMETA-INF/services/io.fabric8.kubernetes.api.KubernetesResourceMappingProvider\\E"}, 
+    {"pattern":"\\QMETA-INF/services/io.fabric8.kubernetes.client.ExtensionAdapter\\E"}, 
+    {"pattern":"\\QMETA-INF/services/java.nio.file.spi.FileSystemProvider\\E"}, 
+    {"pattern":"\\Qcontainers/syndo-builder\\E"},
+    {"pattern":"\\Qlogback.xml\\E"},
+    {"pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"}
+  ]},
+  "bundles":[]
+}

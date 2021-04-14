@@ -1,5 +1,7 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.ObjectReferenceBuilder;
@@ -19,24 +21,48 @@ import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.apache.commons.compress.utils.IOUtils;
 import org.ruffalo.syndo.cmd.CommandBootstrap;
+import org.ruffalo.syndo.exceptions.RuntimeSyndoException;
 import org.ruffalo.syndo.resources.Resources;
 import org.ruffalo.syndo.resources.TarCreator;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
-public class SyndoBuiderAction extends BuilderAction {
+public class SyndoBuilderAction extends BuilderAction {
 
     public static final String BOOTSTRAP_RESOURCE_PATH = "containers/syndo-builder";
-
     public static final String SYNDO_BUILDER = SYNDO + "-builder";
-    public static final String SYNDO_BUILDER_LATEST = SYNDO_BUILDER + ":latest";
 
-    public SyndoBuiderAction() {
+    private static final Path SYNDO_RESOURCE_PATH = bootstrapSyndoResorucePath();
+
+    /**
+     * Static method that can be initialized at build time on graal native so that the
+     * resources can be loaded.
+     *
+     * @return the path to the in-memory file system in use for holding resources
+     */
+    private static Path bootstrapSyndoResorucePath() {
+        URL resourceUrl = null;
+        try {
+            resourceUrl = Thread.currentThread().getContextClassLoader().getResource(BOOTSTRAP_RESOURCE_PATH);
+            if (resourceUrl == null) {
+                throw new RuntimeException("Cannot load missing " + BOOTSTRAP_RESOURCE_PATH);
+            }
+            final FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+            final Path resourceRoot = fs.getPath("/");
+            Resources.exportResourceDir(resourceUrl, resourceRoot);
+            return resourceRoot;
+        } catch (URISyntaxException | IOException e) {
+            throw new RuntimeSyndoException("Could not load internal resource path (" + resourceUrl + ")", e);
+        }
+    }
+
+    public SyndoBuilderAction() {
     }
 
     @Override
@@ -48,11 +74,7 @@ public class SyndoBuiderAction extends BuilderAction {
 
         Path bootstrapDirectory = commandBootstrap.getBootstrapRoot();
         if (bootstrapDirectory == null || !Files.exists(bootstrapDirectory)) {
-            try {
-                bootstrapDirectory = Resources.resourceToPath(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(BOOTSTRAP_RESOURCE_PATH)));
-            } catch (URISyntaxException | IOException e) {
-                throw new RuntimeException("Could not load internal resource path (" + BOOTSTRAP_RESOURCE_PATH + ") when bootstrap directory is null or unavailable", e);
-            }
+            bootstrapDirectory = SYNDO_RESOURCE_PATH;
         } else {
             bootstrapDirectory = bootstrapDirectory.normalize().toAbsolutePath();
         }

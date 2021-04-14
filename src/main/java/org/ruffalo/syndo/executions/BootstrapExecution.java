@@ -1,8 +1,8 @@
 package org.ruffalo.syndo.executions;
 
-import org.ruffalo.syndo.build.Action;
-import org.ruffalo.syndo.build.BuildContext;
-import org.ruffalo.syndo.build.SyndoBuiderAction;
+import org.ruffalo.syndo.actions.Action;
+import org.ruffalo.syndo.actions.BuildContext;
+import org.ruffalo.syndo.actions.SyndoBuilderAction;
 import org.ruffalo.syndo.cmd.Command;
 import org.ruffalo.syndo.cmd.CommandBootstrap;
 import org.ruffalo.syndo.cmd.CommandOpenShift;
@@ -22,7 +22,7 @@ public class BootstrapExecution extends OpenShiftExecution {
 
     @Override
     protected List<Action> getBuildActions(BuildContext context) {
-        final SyndoBuiderAction syndoBuildAction = new SyndoBuiderAction();
+        final SyndoBuilderAction syndoBuildAction = new SyndoBuilderAction();
         return Collections.singletonList(syndoBuildAction);
     }
 

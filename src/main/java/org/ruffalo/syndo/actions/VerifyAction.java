@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 public class VerifyAction extends BaseAction {
 

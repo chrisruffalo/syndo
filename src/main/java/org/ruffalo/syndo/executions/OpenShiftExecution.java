@@ -8,7 +8,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.ProjectBuilder;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
-import org.ruffalo.syndo.build.BuildContext;
+import org.ruffalo.syndo.actions.BuildContext;
 import org.ruffalo.syndo.cmd.CommandOpenShift;
 import org.ruffalo.syndo.exceptions.SyndoException;
 

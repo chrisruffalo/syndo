@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -24,7 +24,7 @@ import java.nio.file.Files;
 
 public class ComponentBuildAction extends BuilderAction {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyndoBuiderAction.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyndoBuilderAction.class);
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
     @Override

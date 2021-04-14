@@ -16,7 +16,10 @@
     </scm>
 
     <properties>
+        <version.graalvm>21.0.0.2</version.graalvm>
         <version.fabric8.kubernetes-client>5.2.1</version.fabric8.kubernetes-client>
+
+        <main.class>org.ruffalo.syndo.Main</main.class>
 
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
@@ -91,9 +94,10 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
                 <configuration>
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>org.ruffalo.syndo.Main</mainClass>
+                            <mainClass>${main.class}</mainClass>
                         </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                     </transformers>
@@ -135,4 +139,53 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.graalvm.sdk</groupId>
+                    <artifactId>graal-sdk</artifactId>
+                    <version>${version.graalvm}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.nativeimage</groupId>
+                        <artifactId>native-image-maven-plugin</artifactId>
+                        <version>${version.graalvm}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>native-image</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <imageName>syndo</imageName>
+                                    <mainClass>${main.class}</mainClass>
+                                    <skip>false</skip>
+                                    <buildArgs>
+                                        <buildArg>--no-fallback</buildArg>
+                                        <buildArg>--verbose</buildArg>
+                                        <buildArg>--initialize-at-build-time=com.google.common.jimfs</buildArg>
+                                        <buildArg>--initialize-at-build-time=com.google.common.base</buildArg>
+                                        <buildArg>--initialize-at-build-time=com.google.common.collect</buildArg>
+                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.actions.SyndoBuilderAction</buildArg>
+                                        <buildArg>--allow-incomplete-classpath</buildArg>
+                                        <buildArg>--enable-https</buildArg>
+                                        <buildArg>-H:ReflectionConfigurationFiles=${project.basedir}/src/main/graalvm-config/reflect-config.json</buildArg>
+                                        <buildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/graalvm-config/resource-config.json</buildArg>
+                                        <buildArg>-H:+AddAllCharsets</buildArg>
+                                    </buildArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

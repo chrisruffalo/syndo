@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;

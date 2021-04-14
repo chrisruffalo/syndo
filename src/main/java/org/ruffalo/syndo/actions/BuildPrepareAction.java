@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;

@@ -76,8 +76,8 @@ public class Command {
         final JCommander commander = JCommander.newBuilder()
                 .addObject(command)
                 .addCommand("build", command.getBuild())
-                .addCommand("export", command.getExport())
                 .addCommand("bootstrap", command.getBootstrap())
+                .addCommand("export", command.getExport())
                 .programName("syndo")
                 .build();
 

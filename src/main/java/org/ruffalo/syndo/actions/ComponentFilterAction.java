@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 import org.ruffalo.syndo.config.Alias;
 import org.ruffalo.syndo.model.BuildNode;

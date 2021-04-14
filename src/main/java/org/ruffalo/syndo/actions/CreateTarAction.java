@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.build;
+package org.ruffalo.syndo.actions;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.ruffalo.syndo.model.DirSourceNode;

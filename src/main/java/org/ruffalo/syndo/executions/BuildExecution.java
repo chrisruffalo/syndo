@@ -1,15 +1,15 @@
 package org.ruffalo.syndo.executions;
 
-import org.ruffalo.syndo.build.Action;
-import org.ruffalo.syndo.build.BuildContext;
-import org.ruffalo.syndo.build.BuildPrepareAction;
-import org.ruffalo.syndo.build.BuildResolveAction;
-import org.ruffalo.syndo.build.ComponentBuildAction;
-import org.ruffalo.syndo.build.ComponentFilterAction;
-import org.ruffalo.syndo.build.CreateTarAction;
-import org.ruffalo.syndo.build.HashFilterAction;
-import org.ruffalo.syndo.build.SyndoBuiderAction;
-import org.ruffalo.syndo.build.VerifyAction;
+import org.ruffalo.syndo.actions.Action;
+import org.ruffalo.syndo.actions.BuildContext;
+import org.ruffalo.syndo.actions.BuildPrepareAction;
+import org.ruffalo.syndo.actions.BuildResolveAction;
+import org.ruffalo.syndo.actions.ComponentBuildAction;
+import org.ruffalo.syndo.actions.ComponentFilterAction;
+import org.ruffalo.syndo.actions.CreateTarAction;
+import org.ruffalo.syndo.actions.HashFilterAction;
+import org.ruffalo.syndo.actions.SyndoBuilderAction;
+import org.ruffalo.syndo.actions.VerifyAction;
 import org.ruffalo.syndo.cmd.Command;
 import org.ruffalo.syndo.cmd.CommandOpenShift;
 import org.ruffalo.syndo.config.Loader;
@@ -46,7 +46,7 @@ public class BuildExecution extends OpenShiftExecution {
         final VerifyAction verifyAction = new VerifyAction();
         actions.add(verifyAction);
 
-        final SyndoBuiderAction syndoBuildAction = new SyndoBuiderAction();
+        final SyndoBuilderAction syndoBuildAction = new SyndoBuilderAction();
         actions.add(syndoBuildAction);
 
         // prepare build
