@@ -25,10 +25,8 @@ public class HashFilterAction extends BaseAction {
                 }
                 final ImageStreamTag ist = client.imageStreamTags().inNamespace(context.getNamespace()).withName(outputRef).get();
                 if (ist != null) {
-                    logger().info("Found content hash matching component {} at {}", node.getName(), outputRef);
+                    logger().info("Found image tag matching component {} content at {}/{}", node.getName(), context.getNamespace(), outputRef);
                     continue;
-                } else {
-                    logger().debug("Component {} does not have imagestreamtag at {}", node.getName(), outputRef);
                 }
             } else {
                 logger().info("no tag in image ref {} to use", outputRef);

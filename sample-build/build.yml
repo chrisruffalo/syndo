@@ -23,8 +23,4 @@ syndo:
       # components to include as part of the alias
       components:
         - base
-        - app
-      # transient builds will cause the inclusion of components that other components depend on
-      # if transient is set to "false" then the latest build artifacts will be used or an error
-      # will occur if the component is not available
-      transient: true
+        - application

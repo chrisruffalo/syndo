@@ -18,10 +18,16 @@ public class ComponentFilterAction extends BaseAction {
         // at this point we have a list of all the nodes in build order
         // and we should be able to filter them out based on what components are selected
         final List<DirSourceNode> nodes = context.getBuildOrder();
-        final List<DirSourceNode> newOrder = new LinkedList<>();
 
         // start with a list of components
-        final List<String> givenComponents = new LinkedList<>(context.getCommandBuild().getComponents());
+        final Set<String> givenComponents = new HashSet<>(context.getCommandBuild().getComponents());
+
+        // quit early if "all" is in given components
+        if (givenComponents == null || givenComponents.isEmpty() || givenComponents.contains("all")) {
+            return;
+        }
+
+        final List<DirSourceNode> newOrder = new LinkedList<>();
         final Set<String> resolvedComponents = new HashSet<>();
 
         // create alias name map
