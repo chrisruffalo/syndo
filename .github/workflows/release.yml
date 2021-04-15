@@ -179,7 +179,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/*
+          file: syndo/artifacts/*
           file_glob: true
           release_name: ${{ needs.metadata.outputs.short-branch }}
           tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
@@ -198,20 +198,29 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
-      - name: Delete Release
+      - name: Delete Snapshot
+        if: contains(github.ref, 'refs/heads/')
         uses: WyriHaximus/github-action-delete-package@master
         with:
-          packageVersionId: ${{ steps.release.outputs.id }}
+          packageVersionId: ${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish snapshot
+      - name: Delete Release
+        if: "!contains(github.ref, 'refs/heads/')"
+        uses: WyriHaximus/github-action-delete-package@master
+        with:
+          packageVersionId: ${{ needs.metadata.outputs.pom-ver }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Snapshot
         if: contains(github.ref, 'refs/heads/')
         run: mvn -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish release
+      - name: Publish Release
         if: "!contains(github.ref, 'refs/heads/')"
         run: mvn --batch-mode deploy
         env:
