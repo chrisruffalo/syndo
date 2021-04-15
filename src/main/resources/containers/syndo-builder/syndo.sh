@@ -95,12 +95,6 @@ for DIR in ${DIRECTORIES[@]}; do
       OUTPUT_TARGET=${OUTPUT_NAMESPACE}/${COMPONENT}
     fi
 
-    # set a temporary directory for use by buildah, not having this set can cause issues with  storage
-    # space on rootless builds
-    TMPDIR="${DIR}/.buildahtmp"
-    mkdir -p ${TMPDIR}
-    export TMPDIR
-
     echo "Building '${COMPONENT}' from '${FROM_IMAGE}' in ${DIR}"
 
     # record the start time
@@ -154,7 +148,7 @@ for DIR in ${DIRECTORIES[@]}; do
         buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=/tmp/.dockercfg-push ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
       fi
 
-      # the keep file signals that we need to keep the image for dependent build steps, if this file does not exist
+      # the keep variable signals that we need to keep the image for dependent build steps, if this file does not exist
       # we delete the image so as to save space (we don't want image space to fill up)
       if [[ "xtrue" != "x${KEEP}" ]]; then
         buildah --storage-driver=${STORAGE_DRIVER} rmi -f ${OUTPUT_TARGET}
