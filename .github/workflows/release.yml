@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Capture pom version
         run: |
-          echo "POM_VER=${POM_VER}" >> $GITHUB_ENV
+          echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       - name: Capture branch info
         if: contains(github.ref, 'refs/heads/')
