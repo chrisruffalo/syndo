@@ -43,13 +43,13 @@ jobs:
         if: contains(github.ref, 'refs/heads/')
         run: |
           echo "PRERELEASE=true" >> $GITHUB_ENV
-          echo "TAG_PREFIX=release-"
+          echo "TAG_PREFIX=release-" >> $GITHUB_ENV
 
       - name: Capture branch info
         if: "!contains(github.ref, 'refs/heads/')"
         run: |
           echo "PRERELEASE=false" >> $GITHUB_ENV
-          echo "TAG_PREFIX=prerelease-"
+          echo "TAG_PREFIX=prerelease-" >> $GITHUB_ENV
 
       - name: Capture outputs
         id: metadata
@@ -111,7 +111,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-          tag: ${{ github.ref }}
+          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
           overwrite: true
           prerelease: ${{ needs.metadata.outputs.prerelease }}
 
@@ -121,13 +121,13 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-          tag: ${{ github.ref }}
+          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
           overwrite: true
           prerelease: ${{ needs.metadata.outputs.prerelease }}
 
       - name: Publish snapshot
         if: contains(github.ref, 'refs/heads/')
-        run: mvn -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT  --batch-mode deploy
+        run: mvn -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
