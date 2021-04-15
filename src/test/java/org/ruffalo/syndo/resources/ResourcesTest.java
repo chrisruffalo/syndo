@@ -21,7 +21,7 @@ public class ResourcesTest {
         final Path exportPath = exportSystem.getPath("export-test");
         Resources.exportResourceDir(resourceUrl, exportPath);
         Assertions.assertTrue(Files.exists(exportSystem.getPath("export-test","test-resource.txt")));
-        Assertions.assertTrue(Files.exists(exportPath.resolve("subdir").resolve("test-subresource.txt")));
+        Assertions.assertTrue(Files.exists(exportSystem.getPath("export-test", "subdir","test-subresource.txt")));
     }
 
     @Test
