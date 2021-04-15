@@ -1,20 +1,21 @@
-package org.ruffalo.syndo.executions;
+package org.ruffalo.syndo.executions.impl;
 
-import org.ruffalo.syndo.actions.Action;
-import org.ruffalo.syndo.actions.BuildContext;
-import org.ruffalo.syndo.actions.BuildPrepareAction;
-import org.ruffalo.syndo.actions.BuildResolveAction;
-import org.ruffalo.syndo.actions.ComponentBuildAction;
-import org.ruffalo.syndo.actions.ComponentFilterAction;
-import org.ruffalo.syndo.actions.CreateTarAction;
-import org.ruffalo.syndo.actions.HashFilterAction;
-import org.ruffalo.syndo.actions.SyndoBuilderAction;
-import org.ruffalo.syndo.actions.VerifyAction;
+import org.ruffalo.syndo.executions.actions.Action;
+import org.ruffalo.syndo.executions.actions.BuildContext;
+import org.ruffalo.syndo.executions.actions.impl.BuildPrepareAction;
+import org.ruffalo.syndo.executions.actions.impl.BuildResolveAction;
+import org.ruffalo.syndo.executions.actions.impl.ComponentBuildAction;
+import org.ruffalo.syndo.executions.actions.impl.ComponentFilterAction;
+import org.ruffalo.syndo.executions.actions.impl.CreateTarAction;
+import org.ruffalo.syndo.executions.actions.impl.HashFilterAction;
+import org.ruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
+import org.ruffalo.syndo.executions.actions.impl.VerifyAction;
 import org.ruffalo.syndo.cmd.Command;
 import org.ruffalo.syndo.cmd.CommandOpenShift;
 import org.ruffalo.syndo.config.Loader;
 import org.ruffalo.syndo.config.Root;
 import org.ruffalo.syndo.exceptions.SyndoException;
+import org.ruffalo.syndo.executions.OpenShiftExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

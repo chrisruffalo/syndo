@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions;
 
 public interface Action {
 

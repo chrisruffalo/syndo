@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions;
 
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.ruffalo.syndo.cmd.Command;

@@ -14,6 +14,7 @@ package org.ruffalo.syndo.model;
 public class ImageRefSourceNode extends BuildNode {
 
     private final String imageRef;
+    private boolean resolvedInternally;
 
     public ImageRefSourceNode(final String imageRef) {
         this.imageRef = imageRef;
@@ -21,5 +22,13 @@ public class ImageRefSourceNode extends BuildNode {
 
     public String getImageRef() {
         return imageRef;
+    }
+
+    public boolean isResolvedInternally() {
+        return resolvedInternally;
+    }
+
+    public void setResolvedInternally(boolean resolvedInternally) {
+        this.resolvedInternally = resolvedInternally;
     }
 }

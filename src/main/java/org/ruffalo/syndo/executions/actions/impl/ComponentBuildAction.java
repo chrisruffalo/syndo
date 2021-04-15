@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -15,6 +15,8 @@ import io.fabric8.openshift.api.model.ImageStream;
 import io.fabric8.openshift.api.model.ImageStreamBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.apache.commons.io.FileUtils;
+import org.ruffalo.syndo.executions.actions.BuildContext;
+import org.ruffalo.syndo.executions.actions.BuilderAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

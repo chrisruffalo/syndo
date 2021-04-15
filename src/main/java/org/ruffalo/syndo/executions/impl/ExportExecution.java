@@ -1,7 +1,9 @@
-package org.ruffalo.syndo.executions;
+package org.ruffalo.syndo.executions.impl;
 
-import org.ruffalo.syndo.actions.SyndoBuilderAction;
+import org.ruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import org.ruffalo.syndo.cmd.CommandExport;
+import org.ruffalo.syndo.executions.Execution;
+import org.ruffalo.syndo.executions.ExecutionResult;
 import org.ruffalo.syndo.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

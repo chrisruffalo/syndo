@@ -1,8 +1,10 @@
-package org.ruffalo.syndo.executions;
+package org.ruffalo.syndo.executions.impl;
 
 import org.ruffalo.syndo.cmd.Command;
+import org.ruffalo.syndo.executions.Execution;
+import org.ruffalo.syndo.executions.ExecutionResult;
 
-public class NoCommandExecution extends Execution{
+public class NoCommandExecution extends Execution {
 
     private Command command;
 

@@ -1,11 +1,12 @@
-package org.ruffalo.syndo.executions;
+package org.ruffalo.syndo.executions.impl;
 
-import org.ruffalo.syndo.actions.Action;
-import org.ruffalo.syndo.actions.BuildContext;
-import org.ruffalo.syndo.actions.SyndoBuilderAction;
+import org.ruffalo.syndo.executions.actions.Action;
+import org.ruffalo.syndo.executions.actions.BuildContext;
+import org.ruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import org.ruffalo.syndo.cmd.Command;
 import org.ruffalo.syndo.cmd.CommandBootstrap;
 import org.ruffalo.syndo.cmd.CommandOpenShift;
+import org.ruffalo.syndo.executions.OpenShiftExecution;
 
 import java.util.Collections;
 import java.util.List;

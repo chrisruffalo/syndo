@@ -1,7 +1,9 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
+import org.ruffalo.syndo.executions.actions.BaseAction;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 import org.ruffalo.syndo.model.DirSourceNode;
 
 import java.util.LinkedList;

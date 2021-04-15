@@ -1,9 +1,11 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.ruffalo.syndo.config.Component;
 import org.ruffalo.syndo.config.Root;
+import org.ruffalo.syndo.executions.actions.BaseAction;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 
 import java.nio.file.FileSystem;
 import java.nio.file.Path;

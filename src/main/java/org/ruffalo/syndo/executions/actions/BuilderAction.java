@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions;
 
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.dsl.LogWatch;

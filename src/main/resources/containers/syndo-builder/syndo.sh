@@ -62,6 +62,8 @@ for DIR in ${DIRECTORIES[@]}; do
     # optional environment variables:
     #   DOCKERFILE - if using a dockerfile build then the dockerfile path from the ${DIR} root and it will use `buildah bud`
     #   KEEP - "true" if the image should be kept (set to true when the image is the source for another image)
+    #   RESOLVED - "true" if the image is internal to the cluster (resolved in the cluster) and needs the registry prefix to be downloaded
+    #   BUILD_SCRIPT - the path to another build file to use, build.sh is the default
     source "${DIR}/.meta/env"
 
     # get full/real path to dockerfile if dockerfile is given
@@ -79,8 +81,13 @@ for DIR in ${DIRECTORIES[@]}; do
       exit 1
     fi
 
-    # use this as the default from registry if nothing is defined in the input
-    FROM_REGISTRY=${FROM_REGISTRY:-image-registry.openshift-image-registry.svc:5000}
+    # use this as the default from registry if nothing is defined in the input and the
+    # input image is marked as being resolved from the registry
+    FROM_REGISTRY=""
+    if [[ "xtrue" == "x${RESOLVED}" ]]; then
+      # note the slash at the end of the FROM_REGISTRY
+      FROM_REGISTRY=${FROM_REGISTRY:-image-registry.openshift-image-registry.svc:5000/}
+    fi
 
     # simple ref to local namespace
     NAMESPACE=${OPENSHIFT_BUILD_NAMESPACE}
@@ -95,7 +102,7 @@ for DIR in ${DIRECTORIES[@]}; do
       OUTPUT_TARGET=${OUTPUT_NAMESPACE}/${COMPONENT}
     fi
 
-    echo "Building '${COMPONENT}' from '${FROM_IMAGE}' in ${DIR}"
+    echo "Building '${COMPONENT}' from '${FROM_REGISTRY}${FROM_IMAGE}' in ${DIR}"
 
     # record the start time
     START_TIME="$(date -u +%s)"
@@ -104,14 +111,13 @@ for DIR in ${DIRECTORIES[@]}; do
     if [[ "x" != "x${DOCKERFILE}" ]]; then
       (
         # using --from here allows us to skip messing with the FROM line of the docker file and allows us to get proper resolution of different types of artifacts the way that buildah does it (and not docker)
-        buildah --authfile=/tmp/.dockercfg-pull --tls-verify=false --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}/${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
+        buildah --authfile=/tmp/.dockercfg-pull --tls-verify=false --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
       )
       EXIT_CODE=$?
     else
       # pull and create the container context with buildah
-      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} --authfile=/tmp/.dockercfg-pull --tls-verify=false from ${FROM_REGISTRY}/${FROM_IMAGE})
+      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} --authfile=/tmp/.dockercfg-pull --tls-verify=false from ${FROM_REGISTRY}${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
-        echo "No container pulled for ${FROM_IMAGE}"
         echo "${COMPONENT} failed to pull ${FROM_REGISTRY}/${FROM_IMAGE}" >> /syndo/working/stats
         exit 1
       fi

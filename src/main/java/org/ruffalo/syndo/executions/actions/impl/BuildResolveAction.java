@@ -1,9 +1,11 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.ruffalo.syndo.cmd.CommandBuild;
 import org.ruffalo.syndo.config.Component;
+import org.ruffalo.syndo.executions.actions.BaseAction;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 import org.ruffalo.syndo.model.BuildNode;
 import org.ruffalo.syndo.model.DirSourceNode;
 import org.ruffalo.syndo.model.DockerfileSourceNode;
@@ -26,6 +28,24 @@ import java.util.Set;
  * Resolves build components and the build order for those components.
  */
 public class BuildResolveAction extends BaseAction {
+
+    private static class Resolution {
+        private final String resolvedAs;
+        private final boolean resolvedTag;
+
+        private Resolution(String resolvedAs, boolean resolvedTag) {
+            this.resolvedAs = resolvedAs;
+            this.resolvedTag = resolvedTag;
+        }
+
+        public String getResolvedAs() {
+            return resolvedAs;
+        }
+
+        public boolean isResolvedTag() {
+            return resolvedTag;
+        }
+    }
 
     @Override
     public void build(BuildContext context) {
@@ -215,7 +235,7 @@ public class BuildResolveAction extends BaseAction {
      * @param imageRef
      * @return
      */
-    private String resolveInputRef(final CommandBuild build, final OpenShiftClient client, final String namespace, final String imageRef) {
+    private Resolution resolveInputRef(final CommandBuild build, final OpenShiftClient client, final String namespace, final String imageRef) {
         // look through tags to find upstream image that matches
         final List<ImageStreamTag> tags = client.imageStreamTags().inAnyNamespace().list().getItems();
         if (!tags.isEmpty()) {
@@ -234,32 +254,34 @@ public class BuildResolveAction extends BaseAction {
 
                 // use tools to get image ref
                 if (tagName.equals(imageRef) || tagNameWithNamespace.equals(imageRef) || tagFullRef.equals(imageRef) || fromName.equals(imageRef)) {
-                    return tagFullRef;
+                    return new Resolution(tagFullRef, true);
                 }
             }
         }
 
         // if the name is just 'imageRef' return the image ref on the namespace
         if (!imageRef.contains("/") && !imageRef.contains(":")) {
-            return String.format("%s/%s", namespace, imageRef);
+            return new Resolution(String.format("%s/%s", namespace, imageRef), true);
         }
 
         // break down image ref by components which are typically
         // {repo url}/{namespace}/{image name}:{tag}
 
 
-        return imageRef;
+        return new Resolution(imageRef, false);
     }
 
     private void setFromImageRef(final CommandBuild buildCommand, final DirSourceNode node, final OpenShiftClient client, final String namespace, final String from) {
-        final String imageRef = this.resolveInputRef(buildCommand, client, namespace, from);
-        if (imageRef == null) {
+        final Resolution imageRef = this.resolveInputRef(buildCommand, client, namespace, from);
+        final ImageRefSourceNode imageRefSourceNode = new ImageRefSourceNode(imageRef.getResolvedAs());
+        imageRefSourceNode.setResolvedInternally(imageRef.isResolvedTag());
+        if (imageRef.getResolvedAs() == null || imageRef.getResolvedAs().isEmpty()) {
             this.logger().error("No image reference provided for: '{}'", from);
-        } else if (!imageRef.equals(from)){
-            this.logger().info("Resolved '{}' for '{}'", imageRef, from);
+            return;
         }
-        final ImageRefSourceNode imageRefSourceNode = new ImageRefSourceNode(imageRef);
+        if (!imageRef.getResolvedAs().equals(from)){
+            this.logger().info("Resolved '{}' as '{}'", from, imageRef.getResolvedAs());
+        }
         node.setFrom(imageRefSourceNode);
-
     }
 }

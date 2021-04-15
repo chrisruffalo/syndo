@@ -1,6 +1,11 @@
 package org.ruffalo.syndo.executions;
 
 import org.ruffalo.syndo.cmd.Command;
+import org.ruffalo.syndo.executions.impl.BootstrapExecution;
+import org.ruffalo.syndo.executions.impl.BuildExecution;
+import org.ruffalo.syndo.executions.impl.ExportExecution;
+import org.ruffalo.syndo.executions.impl.NoCommandExecution;
+import org.ruffalo.syndo.executions.impl.VersionExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +36,9 @@ public abstract class Execution {
                 break;
             case "bootstrap":
                 exe = new BootstrapExecution(command);
+                break;
+            case "version":
+                exe = new VersionExecution();
                 break;
             default:
                 exe = new NoCommandExecution(command);

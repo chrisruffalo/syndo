@@ -11,12 +11,8 @@
     <name>Syndo</name>
     <description>From the greek 'συνδώ' which means 'interconnect' or 'link'</description>
 
-    <scm>
-        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
-    </scm>
-
     <properties>
-        <revision>0.2.0</revision>
+        <revision>0.2.1</revision>
 
         <version.graalvm>21.0.0.2</version.graalvm>
         <version.fabric8.kubernetes-client>5.2.1</version.fabric8.kubernetes-client>
@@ -89,6 +85,10 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
+    </scm>
+
     <distributionManagement>
         <repository>
             <id>github</id>
@@ -98,6 +98,23 @@
     </distributionManagement>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>build.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>build.properties</include>
+                </includes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -202,7 +219,8 @@
                                         <buildArg>--initialize-at-build-time=com.google.common.jimfs</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.base</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.collect</buildArg>
-                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.actions.SyndoBuilderAction</buildArg>
+                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.executions.actions.impl.SyndoBuilderAction</buildArg>
+                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.info.BuildProperties</buildArg>
                                         <buildArg>--allow-incomplete-classpath</buildArg>
                                         <buildArg>--enable-https</buildArg>
                                         <buildArg>-H:ReflectionConfigurationFiles=${project.basedir}/src/main/graalvm-config/reflect-config.json</buildArg>

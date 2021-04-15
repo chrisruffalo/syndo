@@ -1,4 +1,4 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -22,6 +22,8 @@ import io.fabric8.openshift.client.OpenShiftClient;
 import org.apache.commons.compress.utils.IOUtils;
 import org.ruffalo.syndo.cmd.CommandBootstrap;
 import org.ruffalo.syndo.exceptions.RuntimeSyndoException;
+import org.ruffalo.syndo.executions.actions.BuildContext;
+import org.ruffalo.syndo.executions.actions.BuilderAction;
 import org.ruffalo.syndo.resources.Resources;
 import org.ruffalo.syndo.resources.TarCreator;
 

@@ -6,14 +6,18 @@ of administrative overhead.
 Syndo also aims to be efficient meaning that it builds more than one image in a single session which reduces
 the need for pulling images to the build pod every time a new OpenShift build is started.
 
+Think of Syndo a little like a simple version of compose for OpenShift. This is a container build orchestration
+tool.
+
 ## Features
 * Creates custom build image and other OpenShift resources (ImageStreams) as needed
 * Supports serialized buildah or Dockerfile (buildah bud) builds
 * FROM/required builds are resolved at each step
 * Resolves component build order and builds dependent components after their dependencies
 * Works within a single namespace to produce output images
-* Minimize pushes and pulls
+* Minimize pushes and pulls especialy with interdependent image chains
 * Allows for selectively building components and resolves component dependencies
+* Can resolve images in the cluster (in accessible namespaces) or external (upstream registries)
 
 ## Requirements
 * JDK 8 (for the client)
@@ -21,9 +25,15 @@ the need for pulling images to the build pod every time a new OpenShift build is
 * CustomBuildStrategy enabled in OpenShift for the user executing Syndo
 
 ## Future Work
-* Resolution of upstream repositories (doesn't quite work right yet with openshift/resolution logic)
 * Better work on syndo-builder tags/caching
+* Better output instead of raw build logs (and better log handling / saving of logs)
 * Guidance on image building on OpenShift (especially with dnf/subscriptions/entitlements being passed to container-in-container)
+
+## Why Should I Use Syndo?
+You should use Syndo when you have a chain of images or when you need to otherwise orchestrate image building. It is ideal for situations
+where you may have one or more intermediary layers when building applications. For example: you may have an image that creates and configures
+an application server with common configuration and dependencies or certificates for your microservice. In these cases chaining dependent
+builds on those layers all in the same buildah container produces faster builds that are also more consistent.
 
 ## Installing Syndo
 Installing Syndo requires that you [enable custom build configurations](https://docs.openshift.com/container-platform/4.7/cicd/builds/securing-builds-by-strategy.html#securing-builds-by-strategy) 

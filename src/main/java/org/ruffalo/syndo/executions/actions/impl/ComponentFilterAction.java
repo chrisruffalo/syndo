@@ -1,6 +1,8 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import org.ruffalo.syndo.config.Alias;
+import org.ruffalo.syndo.executions.actions.BaseAction;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 import org.ruffalo.syndo.model.BuildNode;
 import org.ruffalo.syndo.model.DirSourceNode;
 

@@ -18,6 +18,8 @@ public class Command {
 
     private CommandBootstrap bootstrap = new CommandBootstrap();
 
+    private CommandVersion version = new CommandVersion();
+
     private String parsedCommand;
 
     private JCommander commander;
@@ -54,6 +56,14 @@ public class Command {
         this.export = export;
     }
 
+    public CommandVersion getVersion() {
+        return version;
+    }
+
+    public void setVersion(CommandVersion version) {
+        this.version = version;
+    }
+
     public String getParsedCommand() {
         return parsedCommand;
     }
@@ -78,6 +88,7 @@ public class Command {
                 .addCommand("build", command.getBuild())
                 .addCommand("bootstrap", command.getBootstrap())
                 .addCommand("export", command.getExport())
+                .addCommand("version", command.getVersion())
                 .programName("syndo")
                 .build();
 

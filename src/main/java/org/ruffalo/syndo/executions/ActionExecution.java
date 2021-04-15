@@ -1,7 +1,7 @@
 package org.ruffalo.syndo.executions;
 
-import org.ruffalo.syndo.actions.Action;
-import org.ruffalo.syndo.actions.BuildContext;
+import org.ruffalo.syndo.executions.actions.Action;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 import org.ruffalo.syndo.exceptions.SyndoException;
 
 import java.util.List;

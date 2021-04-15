@@ -1,17 +1,18 @@
-package org.ruffalo.syndo.actions;
+package org.ruffalo.syndo.executions.actions.impl;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.ruffalo.syndo.executions.actions.BaseAction;
+import org.ruffalo.syndo.executions.actions.BuildContext;
 import org.ruffalo.syndo.model.DirSourceNode;
 import org.ruffalo.syndo.model.DockerfileSourceNode;
+import org.ruffalo.syndo.model.ImageRefSourceNode;
 import org.ruffalo.syndo.resources.TarCreator;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class CreateTarAction extends BaseAction {
 
@@ -41,22 +42,35 @@ public class CreateTarAction extends BaseAction {
                     meta.put("DOCKERFILE", ((DockerfileSourceNode)sourceNode).getDockerfile());
                 }
 
+                // handle the from image and the RESOLVED property. the RESOLVED property means
+                // that the image was found "in cluster" and will need to be prefixed with the
+                // cluster's internal registry url.
                 final String fromRef = sourceNode.getFromRef();
                 if (fromRef != null) {
                     meta.put("FROM_IMAGE", fromRef);
+                    if (sourceNode.getFrom() instanceof ImageRefSourceNode) {
+                        if (((ImageRefSourceNode) sourceNode.getFrom()).isResolvedInternally()) {
+                            // resolved here means that the tag matching the input was found in
+                            // the cluster itself
+                            meta.put("RESOLVED", "true");
+                        }
+                    } else if (sourceNode.getFrom() instanceof DirSourceNode) {
+                        // dir sources are always resolved (internal to the cluster) because they
+                        // are built and inserted there
+                        meta.put("RESOLVED", "true");
+                    }
                 }
 
+                // don't delete the output image if the output image is used elsewhere in the build
                 if (sourceNode.isKeep()) {
                     meta.put("KEEP", "true");
                 }
-
-                final Set<String> excludes = new HashSet<>();
 
                 // then meta files
                 TarCreator.addMetaEnvToTar(tarStream, prefix + "/.meta/env", meta);
 
                 // add project contexts tar, excluding files that may have been previously created
-                TarCreator.addPrefixedDirectoryToTar(tarStream, sourceNode.getDirectory(), prefix, excludes);
+                TarCreator.addPrefixedDirectoryToTar(tarStream, sourceNode.getDirectory(), prefix);
             }
         } catch (IOException e) {
             this.logger().error("Could not create tar output stream for build", e);
