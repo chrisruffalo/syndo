@@ -84,15 +84,15 @@ jobs:
       - name: 'Upload JAR'
         uses: actions/upload-artifact@v2
         with:
-          name: target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          name: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: targets/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
           retention-days: 1
 
       - name: 'Upload Executable JAR'
         uses: actions/upload-artifact@v2
         with:
-          name: target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
+          name: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
+          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           retention-days: 1
 
   build_native:
@@ -141,8 +141,8 @@ jobs:
       - name: 'Upload Binary Executable'
         uses: actions/upload-artifact@v2
         with:
-          name: target/syndo${{ matrix.target-suffix }}
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          name: artifacts/syndo${{ matrix.target-suffix }}
+          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
 
           retention-days: 1
 
