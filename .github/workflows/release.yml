@@ -157,6 +157,10 @@ jobs:
         with:
           path: artifacts/
 
+      - name: Find
+        run: |
+          find .
+
       - name: Delete release/tag if it exists
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
