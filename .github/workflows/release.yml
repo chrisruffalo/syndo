@@ -142,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
-          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          path: target/syndo${{ matrix.native-asset-suffix }}
           retention-days: 1
 
   create_release:
