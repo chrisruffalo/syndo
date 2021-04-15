@@ -176,7 +176,6 @@ jobs:
           commit: ${{ github.sha }}
 
       - name: Upload Release Artifacts
-      - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ needs.metadata.outputs.short-branch }}
