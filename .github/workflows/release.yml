@@ -42,8 +42,10 @@ jobs:
         run: |
           echo "::set-output name=pom-ver::${{ env.POM_VER }}"
           echo "::set-output name=decide::${{ env.PRERELEASE }}"
+          echo "::set-output name=short-branch::${GITHUB_REF##*/}"
 
     outputs:
+      short-branch: ${{ steps.metadata.outputs.short-branch }}
       pom-ver: ${{ steps.metadata.outputs.pom-ver }}
       prerelease: ${{ steps.metadata.outputs.prerelease }}
 
@@ -64,7 +66,8 @@ jobs:
       - name: Create target release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref }}
+          name: ${{ needs.metadata.outputs.short-branch }}
+          tag: ${{ needs.metadata.outputs.short-branch }}
           prerelease: ${{ needs.metadata.outputs.prerelease }}
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: ${{ github.sha }}
