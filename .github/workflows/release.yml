@@ -1,4 +1,4 @@
-name: Build Syndo Release Artifacts
+name: Build Syndo Artifacts
 on:
   push:
     branches:
@@ -21,6 +21,8 @@ jobs:
   metadata:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
       - name: Capture pom version
         run: |
           echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
@@ -49,6 +51,8 @@ jobs:
     needs: [metadata, verify]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
       - name: Delete release/tag if it exists
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
@@ -58,11 +62,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create target release
-        uses: svenstaro/upload-release-action@v2
+        uses: ncipollo/release-action@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           prerelease: ${{ needs.metadata.outputs.prerelease }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: ${{ github.sha }}
 
   build_jars:
     # dependency on verification
