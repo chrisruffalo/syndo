@@ -141,7 +141,7 @@ jobs:
       - name: 'Upload Binary Executable'
         uses: actions/upload-artifact@v2
         with:
-          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.target-suffix }}
           path: target/syndo${{ matrix.native-asset-suffix }}
           retention-days: 1
 
@@ -151,23 +151,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: 'Download JAR'
+      - name: 'Download Artifacts'
         uses: actions/download-artifact@v2
         with:
-          name: syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-
-      - name: 'Download Executable JAR'
-        uses: actions/download-artifact@v2
-        with:
-          name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-
-      - name: 'Download Binary Executable'
-        uses: actions/download-artifact@v2
-        with:
-          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
-          path: artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          path: artifacts/
 
       - name: Delete release/tag if it exists
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
