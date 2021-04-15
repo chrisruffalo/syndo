@@ -123,7 +123,7 @@ public class SyndoBuilderAction extends BuilderAction {
             }
             final String dockerFileContentsString;
             try {
-                dockerFileContentsString = new String(IOUtils.toByteArray(stream));
+                dockerFileContentsString = new String(IOUtils.toByteArray(stream)).replaceAll("\\r\\n?", "\n");
             } catch (IOException e) {
                 logger().error("Could not read embedded dockerfile for syndo-builder: {}", e.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
