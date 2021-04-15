@@ -120,9 +120,11 @@ jobs:
           - os: ubuntu-latest
             gu-binary: gu
             native-asset-suffix: linux-amd64
+            target-suffix: ""
           - os: windows-2016
             gu-binary: gu.cmd
-            native-asset-suffix: windows-amd64
+            native-asset-suffix: windows-amd64.exe
+            target-suffix: .exe
     steps:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
@@ -146,13 +148,14 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+        run: |
+          mvn --batch-mode --update-snapshots -DskipTests -Pnative package
 
       - name: Upload native binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo
+          file: target/syndo${{ target.suffix }}
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
           tag: ${{ github.ref }}
           overwrite: true
