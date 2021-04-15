@@ -59,13 +59,14 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ needs.metadata.outputs.short-branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create target release
         uses: ncipollo/release-action@v1
         with:
+          allowUpdates: true
           name: ${{ needs.metadata.outputs.short-branch }}
           tag: ${{ needs.metadata.outputs.short-branch }}
           prerelease: ${{ needs.metadata.outputs.prerelease }}
