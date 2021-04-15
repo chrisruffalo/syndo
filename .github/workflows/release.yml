@@ -165,21 +165,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-#      - name: Create target release
-#        uses: ncipollo/release-action@v1
-#        with:
-#          allowUpdates: true
-#          name: ${{ needs.metadata.outputs.short-branch }}
-#          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
-#          prerelease: ${{ needs.metadata.outputs.prerelease }}
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          commit: ${{ github.sha }}
+      - name: Create target release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          name: ${{ needs.metadata.outputs.short-branch }}
+          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: ${{ github.sha }}
 
       - name: Upload artifacts
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/*
+          file: artifacts/syndo-*
           file_glob: true
           release_name: ${{ needs.metadata.outputs.short-branch }}
           tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
