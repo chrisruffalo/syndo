@@ -141,8 +141,8 @@ jobs:
       - name: 'Upload Binary Executable'
         uses: actions/upload-artifact@v2
         with:
-          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.target-suffix }}
-          path: target/syndo${{ matrix.native-asset-suffix }}
+          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ native-asset-suffix }}
+          path: target/syndo${{ matrix.target-suffix }}
           retention-days: 1
 
   create_release:
