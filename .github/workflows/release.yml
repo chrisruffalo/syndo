@@ -30,8 +30,31 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
+
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots -DskipTests package
+
+      - name: Capture pom version
+        run: |
+          echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Upload java binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/syndo-${{ env.POM_VER }}-0.2.0.jar
+          asset_name: syndo-${{ env.POM_VER }}-0.2.0.jar
+          tag: ${{ github.ref }}-unstable
+          overwrite: true
+
+      - name: Upload java executable binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/syndo-${{ env.POM_VER }}-0.2.0-shaded.jar
+          asset_name: syndo-${{ env.POM_VER }}-0.2.0-executable.jar
+          tag: ${{ github.ref }}-unstable
+          overwrite: true
 
   build_native:
     # dependency on verification
@@ -41,13 +64,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        gu-binary: [gu, gu.cmd]
-        exclude:
+        include:
           - os: ubuntu-latest
-            gu-binary: gu.cmd
-          - os: windows-latest
             gu-binary: gu
+            native-asset: syndo-linux-amd64
+          - os: windows-latest
+            gu-binary: gu.cmd
+            native-asset: syndo-windows-amd64
     steps:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
@@ -72,3 +95,12 @@ jobs:
 
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+
+      - name: Upload native binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/syndo
+          asset_name: ${{ matrix.native-asset }}
+          tag: ${{ github.ref }}-unstable
+          overwrite: true
