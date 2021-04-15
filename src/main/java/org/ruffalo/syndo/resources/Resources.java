@@ -99,12 +99,12 @@ public class Resources {
             final int subPathIndex = resourceUrlToString.indexOf("!");
             if (subPathIndex >= 0 && subPathIndex + 1 < resourceUrlToString.length()) {
                 String path = resourceUrlToString.substring(subPathIndex + 1);
-                if (!path.startsWith("/")) {
-                    path = "/" + path;
+                if (!path.startsWith(fs.getSeparator())) {
+                    path = fs.getSeparator() + path;
                 }
                 folder = fs.getPath(path);
             } else {
-                folder = fs.getPath("/");
+                folder = fs.getPath(fs.getSeparator());
             }
         }
         return folder;
@@ -118,13 +118,13 @@ public class Resources {
         Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                final Path relativePath = folder.relativize(file);
-                final Path targetPath = outputPath.resolve(relativePath.toString());
-                Files.createDirectories(targetPath.getParent());
-                Files.copy(file, targetPath);
+            final Path relativePath = folder.relativize(file);
+            final Path targetPath = outputPath.resolve(relativePath.toString());
+            Files.createDirectories(targetPath.getParent());
+            Files.copy(file, targetPath);
 
-                // continue file visit
-                return super.visitFile(file, attrs);
+            // continue file visit
+            return super.visitFile(file, attrs);
             }
         });
     }
