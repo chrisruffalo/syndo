@@ -38,22 +38,27 @@ jobs:
         run: |
           echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
+      - name: Capture branch info
+        if: contains(github.ref, 'refs/heads/')
+        run: |
+          echo "TAG_SUFFIX=-unstable" >> $GITHUB_ENV
+
       - name: Upload java binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo-${{ env.POM_VER }}.jar
           asset_name: syndo-${{ env.POM_VER }}.jar
-          tag: ${{ github.ref }}-unstable
+          tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
           overwrite: true
 
       - name: Upload java executable binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo-${{ env.POM_VER }}-0.2.0-shaded.jar
-          asset_name: syndo-${{ env.POM_VER }}-0.2.0-executable.jar
-          tag: ${{ github.ref }}-unstable
+          file: target/syndo-${{ env.POM_VER }}-shaded.jar
+          asset_name: syndo-${{ env.POM_VER }}-executable.jar
+          tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
           overwrite: true
 
   build_native:
@@ -100,11 +105,16 @@ jobs:
         run: |
           echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
+      - name: Capture branch info
+        if: contains(github.ref, 'refs/heads/')
+        run: |
+          echo "TAG_SUFFIX=-unstable" >> $GITHUB_ENV
+
       - name: Upload native binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo
           asset_name: syndo-${{ env.POM_VER }}-${{ matrix.native-asset-suffix }}
-          tag: ${{ github.ref }}-unstable
+          tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
           overwrite: true
