@@ -119,7 +119,13 @@ public class Resources {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             final Path relativePath = folder.relativize(file);
-            final Path targetPath = outputPath.resolve(relativePath.toString());
+            Path targetPath = outputPath.normalize();
+            // resolving the path piecewise like this allows us to step through
+            // each path element as a string value and not get caught out by
+            // the changing of path separators between filesystems (or jimfs)
+            for (final Path path : relativePath) {
+                targetPath = targetPath.resolve(path.toString());
+            }
             Files.createDirectories(targetPath.getParent());
             Files.copy(file, targetPath);
 
