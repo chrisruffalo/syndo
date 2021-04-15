@@ -93,7 +93,7 @@ jobs:
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           tag: ${{ github.ref }}
           overwrite: true
-          prerelease: ${{ jneeds.metadata.outputs.prerelease }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
 
   build_native:
     # dependency on verification
@@ -143,4 +143,4 @@ jobs:
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
           tag: ${{ github.ref }}
           overwrite: true
-          prerelease: ${{ jneeds.metadata.outputs.prerelease }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
