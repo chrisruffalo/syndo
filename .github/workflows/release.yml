@@ -155,7 +155,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo${{ target.suffix }}
+          file: target/syndo${{ target-suffix }}
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
           tag: ${{ github.ref }}
           overwrite: true
