@@ -179,10 +179,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ needs.metadata.outputs.short-branch }}
-          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
+          tag_name: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
           files: |
             artifacts/syndo-*
-          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
