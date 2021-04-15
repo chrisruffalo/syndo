@@ -157,7 +157,7 @@
                         <phase>process-resources</phase>
                         <configuration>
                             <tasks>
-                                <fixcrlf srcdir="${project.build.outputDirectory}" eol="unix" />
+                                <fixcrlf srcdir="${project.build.outputDirectory}" eol="unix" includes="**/*.sh,**/Dockerfile"/>
                             </tasks>
                         </configuration>
                         <goals>
