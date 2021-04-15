@@ -56,12 +56,15 @@ public class CommandOpenShift extends SubCommand {
             searchPaths.add(homeKube); // and add default place
         }
 
-        // check cygwin places
-        Path homeHome = Paths.get(System.getenv("HOME"));
-        if (!homeHome.equals(home)) {
-            homeKube = homeHome.resolve(".kube");
-            if (Files.exists(homeKube)) {
-                searchPaths.add(homeKube);
+        // check HOME environment variable (allows cygwin or weird setups to try and work)
+        final String homeEnv = System.getenv("HOME");
+        if (homeEnv != null && !homeEnv.isEmpty()) {
+            Path homeHome = Paths.get(homeEnv);
+            if (!homeHome.equals(home)) {
+                homeKube = homeHome.resolve(".kube");
+                if (Files.exists(homeKube)) {
+                    searchPaths.add(homeKube);
+                }
             }
         }
 
