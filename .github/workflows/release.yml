@@ -181,7 +181,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           release_id: ${{ needs.metadata.outputs.short-branch }}
-          file: "artifacts/*"
+          file: "/home/runner/work/syndo/syndo/artifacts/syndo-*"
 
   publish_github_maven:
     runs-on: ubuntu-latest
