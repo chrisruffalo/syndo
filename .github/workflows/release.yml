@@ -6,36 +6,7 @@ on:
     tags:
       - release-*
 jobs:
-  metadata:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Capture pom version
-        id: pom
-        run: |
-          export POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "POM_VER=${POM_VER}" >> $GITHUB_ENV
-          echo "::set-output name=pom-ver::${POM_VER}"
-
-      - name: Capture branch info
-        id: decide-prerelease
-        if: contains(github.ref, 'refs/heads/')
-        run: |
-          echo "PRERELEASE=true" >> $GITHUB_ENV
-          echo "::set-output name=decide::true"
-
-      - name: Capture branch info
-        id: decide-release
-        if: "!contains(github.ref, 'refs/heads/')"
-        run: |
-          echo "PRERELEASE=false" >> $GITHUB_ENV
-          echo "::set-output name=decide::false"
-
-    outputs:
-      pom-ver: ${{ steps.pom.outputs.pom-ver }}
-      prerelease: ${{ steps.decide-prerelease.outputs.decide }}${{ steps.decide-release.outputs.decide }}
-
   verify:
-    needs: metadata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -47,8 +18,35 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
 
+  metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Capture pom version
+        run: |
+          echo "POM_VER=${POM_VER}" >> $GITHUB_ENV
+
+      - name: Capture branch info
+        if: contains(github.ref, 'refs/heads/')
+        run: |
+          echo "PRERELEASE=true" >> $GITHUB_ENV
+
+      - name: Capture branch info
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: |
+          echo "PRERELEASE=false" >> $GITHUB_ENV
+
+      - name: Capture outputs
+        id: metadata
+        run: |
+          echo "::set-output name=pom-ver::${{ env.POM_VER }}"
+          echo "::set-output name=decide::${{ env.PRERELEASE }}"
+
+    outputs:
+      pom-ver: ${{ steps.metadata.outputs.pom-ver }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+
   prepare:
-    needs: verify
+    needs: [metadata, verify]
     runs-on: ubuntu-latest
     steps:
       - name: Delete release/tag if it exists
@@ -59,7 +57,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_jar:
+      - name: Create target release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
+
+  build_jars:
     # dependency on verification
     needs: [metadata, prepare]
 
@@ -79,11 +84,11 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo-${{ env.POM_VER }}.jar
-          asset_name: syndo-${{ env.POM_VER }}.jar
+          file: target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}.jar
           tag: ${{ github.ref }}
           overwrite: true
-          prerelease: ${{ env.PRERELEASE }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
 
       - name: Upload java executable binary to release
         uses: svenstaro/upload-release-action@v2
