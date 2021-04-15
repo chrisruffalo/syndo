@@ -148,7 +148,7 @@ jobs:
 
   create_release:
     runs-on: ubuntu-latest
-    needs: [metadata, build_jars, build_native]
+    needs: [metadata, build_jars]
     steps:
       - uses: actions/checkout@v2
 
