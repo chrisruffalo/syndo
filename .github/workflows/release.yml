@@ -43,13 +43,13 @@ jobs:
         if: contains(github.ref, 'refs/heads/')
         run: |
           echo "PRERELEASE=true" >> $GITHUB_ENV
-          echo "TAG_PREFIX=release-" >> $GITHUB_ENV
+          echo "TAG_PREFIX=prerelease-" >> $GITHUB_ENV
 
       - name: Capture branch info
         if: "!contains(github.ref, 'refs/heads/')"
         run: |
           echo "PRERELEASE=false" >> $GITHUB_ENV
-          echo "TAG_PREFIX=prerelease-" >> $GITHUB_ENV
+          echo "TAG_PREFIX=release-" >> $GITHUB_ENV
 
       - name: Capture outputs
         id: metadata
