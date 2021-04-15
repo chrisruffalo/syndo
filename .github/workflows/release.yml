@@ -165,7 +165,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create target release
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
@@ -174,19 +174,8 @@ jobs:
           prerelease: ${{ needs.metadata.outputs.prerelease }}
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: ${{ github.sha }}
-
-      - name: Upload Release Artifacts
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ needs.metadata.outputs.short-branch }}
-          tag_name: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
-          files: |
-            /home/runner/work/syndo/syndo/artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-            /home/runner/work/syndo/syndo/artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-            /home/runner/work/syndo/syndo/artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-linux-amd64
-            /home/runner/work/syndo/syndo/artifacts/syndo-${{ needs.metadata.outputs.pom-ver }}-windows-amd64.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "/home/runner/work/syndo/syndo/artifacts/*"
+          replacesArtifacts: true
 
   publish_github_maven:
     runs-on: ubuntu-latest
