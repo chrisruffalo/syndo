@@ -43,11 +43,13 @@ jobs:
         if: contains(github.ref, 'refs/heads/')
         run: |
           echo "PRERELEASE=true" >> $GITHUB_ENV
+          echo "TAG_PREFIX=release-"
 
       - name: Capture branch info
         if: "!contains(github.ref, 'refs/heads/')"
         run: |
           echo "PRERELEASE=false" >> $GITHUB_ENV
+          echo "TAG_PREFIX=prerelease-"
 
       - name: Capture outputs
         id: metadata
@@ -55,11 +57,13 @@ jobs:
           echo "::set-output name=pom-ver::${{ env.POM_VER }}"
           echo "::set-output name=decide::${{ env.PRERELEASE }}"
           echo "::set-output name=short-branch::${GITHUB_REF##*/}"
+          echo "::set-output name=tag-prefix::${{ env.TAG_PREFIX }}"
 
     outputs:
       short-branch: ${{ steps.metadata.outputs.short-branch }}
       pom-ver: ${{ steps.metadata.outputs.pom-ver }}
       prerelease: ${{ steps.metadata.outputs.prerelease }}
+      tag-prefix: ${{ steps.metadata.outputs.tag-prefix }}
 
   prepare:
     needs: [metadata, verify]
@@ -71,7 +75,7 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
-          tag_name: ${{ needs.metadata.outputs.short-branch }}
+          tag_name: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -80,7 +84,7 @@ jobs:
         with:
           allowUpdates: true
           name: ${{ needs.metadata.outputs.short-branch }}
-          tag: ${{ needs.metadata.outputs.short-branch }}
+          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
           prerelease: ${{ needs.metadata.outputs.prerelease }}
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: ${{ github.sha }}
