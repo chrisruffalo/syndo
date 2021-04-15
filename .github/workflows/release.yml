@@ -19,7 +19,7 @@ jobs:
         run: mvn --batch-mode --update-snapshots verify
 
   build_jar:
-    needs: verify
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
 
   build_native:
     # dependency on verification
-    needs: verify
+    needs: build
 
     # run this job on the current template instantiation
     runs-on: ${{ matrix.os }}
