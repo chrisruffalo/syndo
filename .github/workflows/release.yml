@@ -138,12 +138,13 @@ jobs:
       - name: Build with Maven
         run: |
           mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+          mv target/syndo${{ matrix.target-suffix }} target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
 
       - name: 'Upload Binary Executable'
         uses: actions/upload-artifact@v2
         with:
           name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
-          path: target/syndo${{ matrix.target-suffix }}
+          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
           retention-days: 1
 
   create_release:
@@ -156,10 +157,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           path: artifacts/
-
-      - name: Find
-        run: |
-          find .
 
       - name: Delete release/tag if it exists
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
