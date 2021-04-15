@@ -6,7 +6,7 @@ on:
     tags:
       - release-*
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,7 +19,9 @@ jobs:
         run: mvn --batch-mode --update-snapshots verify
 
   build_jar:
-    needs: build
+    # dependency on verification
+    needs: verify
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -33,7 +35,7 @@ jobs:
 
   build_native:
     # dependency on verification
-    needs: build
+    needs: verify
 
     # run this job on the current template instantiation
     runs-on: ${{ matrix.os }}
@@ -53,6 +55,10 @@ jobs:
           graalvm: '21.0.0.2'
           java: 'java11'
           arch: 'amd64'
+
+      - name: Add msbuild to PATH
+        if: contains(matrix.os, 'windows')
+        uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Install native-image component
         run: |

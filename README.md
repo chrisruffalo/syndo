@@ -20,6 +20,11 @@ the need for pulling images to the build pod every time a new OpenShift build is
 * OpenShift 4.7+
 * CustomBuildStrategy enabled in OpenShift for the user executing Syndo
 
+## Future Work
+* Resolution of upstream repositories (doesn't quite work right yet with openshift/resolution logic)
+* Better work on syndo-builder tags/caching
+* Guidance on image building on OpenShift (especially with dnf/subscriptions/entitlements being passed to container-in-container)
+
 ## Installing Syndo
 Installing Syndo requires that you [enable custom build configurations](https://docs.openshift.com/container-platform/4.7/cicd/builds/securing-builds-by-strategy.html#securing-builds-by-strategy) 
 in your cluster. Syndo will create all the artifacts it needs in the target namespace.
