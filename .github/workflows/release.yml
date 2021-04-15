@@ -175,16 +175,17 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: ${{ github.sha }}
 
-      - name: Upload artifacts
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload Release Artifacts
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/syndo-*
-          file_glob: true
-          release_name: ${{ needs.metadata.outputs.short-branch }}
+          name: ${{ needs.metadata.outputs.short-branch }}
           tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
-          overwrite: true
-          prerelease: ${{ needs.metadata.outputs.prerelease }}
+          files: |
+            artifacts/syndo-*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish_github_maven:
     runs-on: ubuntu-latest
