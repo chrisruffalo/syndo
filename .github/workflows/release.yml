@@ -7,9 +7,21 @@ on:
       - release-*
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # test on all target os
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-2016
     steps:
       - uses: actions/checkout@v2
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:
@@ -103,17 +115,29 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo-${{ needs.metadata.outputs.pom-ver }}-shaded.jar
+          file: target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           asset_name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: ${{ needs.metadata.outputs.prerelease }}
 
+      - name: Publish snapshot
+        if: contains(github.ref, 'refs/heads/')
+        run: mvn -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT  --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: mvn --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build_native:
     # dependency on verification
     needs: [metadata, prepare]
 
-    # run this job on the current template instantiation
+    # build on all target os
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
