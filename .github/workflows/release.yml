@@ -41,7 +41,7 @@ jobs:
       - name: Capture branch info
         if: contains(github.ref, 'refs/heads/')
         run: |
-          echo "TAG_SUFFIX=-unstable" >> $GITHUB_ENV
+          echo "PRERELEASE=true" >> $GITHUB_ENV
 
       - name: Upload java binary to release
         uses: svenstaro/upload-release-action@v2
@@ -51,6 +51,7 @@ jobs:
           asset_name: syndo-${{ env.POM_VER }}.jar
           tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
           overwrite: true
+          prerelease: ${{ env.PRERELEASE }}
 
       - name: Upload java executable binary to release
         uses: svenstaro/upload-release-action@v2
@@ -60,6 +61,7 @@ jobs:
           asset_name: syndo-${{ env.POM_VER }}-executable.jar
           tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
           overwrite: true
+          prerelease: ${{ env.PRERELEASE }}
 
   build_native:
     # dependency on verification
@@ -102,13 +104,19 @@ jobs:
         run: mvn --batch-mode --update-snapshots -DskipTests -Pnative package
 
       - name: Capture pom version
+        if: !contains(matrix.os, 'windows')
         run: |
           echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Capture pom version
+        if: contains(matrix.os, 'windows')
+        run: |
+          echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Capture branch info
         if: contains(github.ref, 'refs/heads/')
         run: |
-          echo "TAG_SUFFIX=-unstable" >> $GITHUB_ENV
+          echo "PRERELEASE=true" >> $GITHUB_ENV
 
       - name: Upload native binary to release
         uses: svenstaro/upload-release-action@v2
@@ -116,5 +124,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo
           asset_name: syndo-${{ env.POM_VER }}-${{ matrix.native-asset-suffix }}
-          tag: ${{ github.ref }}${{ env.TAG_SUFFIX }}
+          tag: ${{ github.ref }}
           overwrite: true
+          prerelease: ${{ env.PRERELEASE }}
