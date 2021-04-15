@@ -42,8 +42,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/syndo-${{ env.POM_VER }}-0.2.0.jar
-          asset_name: syndo-${{ env.POM_VER }}-0.2.0.jar
+          file: target/syndo-${{ env.POM_VER }}.jar
+          asset_name: syndo-${{ env.POM_VER }}.jar
           tag: ${{ github.ref }}-unstable
           overwrite: true
 
@@ -67,10 +67,10 @@ jobs:
         include:
           - os: ubuntu-latest
             gu-binary: gu
-            native-asset: syndo-linux-amd64
+            native-asset-suffix: linux-amd64
           - os: windows-2016
             gu-binary: gu.cmd
-            native-asset: syndo-windows-amd64
+            native-asset-suffix: windows-amd64
     steps:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
@@ -96,11 +96,15 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots -DskipTests -Pnative package
 
+      - name: Capture pom version
+        run: |
+          echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
       - name: Upload native binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/syndo
-          asset_name: ${{ matrix.native-asset }}
+          asset_name: syndo-${{ env.POM_VER }}-${{ matrix.native-asset-suffix }}
           tag: ${{ github.ref }}-unstable
           overwrite: true
