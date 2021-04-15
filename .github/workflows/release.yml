@@ -181,7 +181,7 @@ jobs:
           name: ${{ needs.metadata.outputs.short-branch }}
           tag_name: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
           files: |
-            artifacts/syndo-*
+            /home/runner/work/syndo/syndo/artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
