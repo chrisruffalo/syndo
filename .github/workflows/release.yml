@@ -68,7 +68,7 @@ jobs:
           - os: ubuntu-latest
             gu-binary: gu
             native-asset: syndo-linux-amd64
-          - os: windows-latest
+          - os: windows-2016
             gu-binary: gu.cmd
             native-asset: syndo-windows-amd64
     steps:
