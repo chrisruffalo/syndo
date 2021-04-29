@@ -7,6 +7,7 @@ on:
       - release-*
 jobs:
   verify:
+    name: "Test and Verify"
     # test on all target os
     runs-on: ${{ matrix.os }}
     strategy:
@@ -31,6 +32,7 @@ jobs:
         run: mvn --batch-mode --update-snapshots verify
 
   metadata:
+    name: "Calculate Metadata"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -66,6 +68,8 @@ jobs:
       tag-prefix: ${{ steps.metadata.outputs.tag-prefix }}
 
   build_jars:
+    name: "Build JAR Files"
+
     # dependency on verification
     needs: [metadata, verify]
 
@@ -96,7 +100,15 @@ jobs:
           path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           retention-days: 1
 
+      - name: 'Upload Maven Plugin'
+        uses: actions/upload-artifact@v2
+        with:
+          name: syndo-maven-plguin-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: syndo-maven-plugin/target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          retention-days: 1
+
   build_native:
+    name: "Build Native Executables"
     # dependency on verification
     needs: [metadata, verify]
 
@@ -148,6 +160,7 @@ jobs:
           retention-days: 1
 
   create_release:
+    name: "Create Github Release"
     runs-on: ubuntu-latest
     needs: [metadata, build_jars, build_native]
     steps:
@@ -178,7 +191,8 @@ jobs:
           artifacts: "/home/runner/work/syndo/syndo/artifacts/**/*"
           replacesArtifacts: true
 
-  publish_github_maven:
+  publish_maven:
+    name: "Publish Maven Releases"
     runs-on: ubuntu-latest
     needs: [metadata, build_jars, build_native]
     steps:
@@ -208,12 +222,40 @@ jobs:
 
       - name: Publish Snapshot
         if: contains(github.ref, 'refs/heads/')
-        run: mvn -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
+        run: mvn -Pgithub-distribution -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Release
         if: "!contains(github.ref, 'refs/heads/')"
-        run: mvn --batch-mode deploy
+        run: mvn -Pgithub-distribution --batch-mode deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java for publishing to Maven Central Repository
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - name: Install GPG Secret Key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Publish OSSRH Package Snapshot
+        if: contains(github.ref, 'refs/heads/')
+        run: mvn -Possrh-distribution -Drevision=${{ env.POM_VER }}-SNAPSHOT --batch-mode --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} clean deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Publish OSSRH Package Release
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: mvn -Possrh-distribution --batch-mode --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}

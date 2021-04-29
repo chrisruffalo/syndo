@@ -12,14 +12,11 @@
     <name>Syndo</name>
     <description>From the greek 'συνδώ' which means 'interconnect' or 'link'</description>
 
-    <scm>
-        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
-    </scm>
-
-    <modules>
-        <module>syndo</module>
-        <module>syndo-maven-plugin</module>
-    </modules>
+    <developers>
+        <developer>
+            <name>Chris Ruffalo</name>
+        </developer>
+    </developers>
 
     <properties>
         <revision>0.2.1</revision>
@@ -32,6 +29,21 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <url>https://github.com/chrisruffalo/syndo</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>scm:git:https://github.com/chrisruffalo/syndo.git</url>
+        <connection>scm:git:https://github.com/chrisruffalo/syndo.git</connection>
+        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
+    </scm>
 
     <dependencyManagement>
         <dependencies>
@@ -117,8 +129,119 @@
                 <version>3.6.1</version>
                 <scope>provided</scope>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>syndo</module>
+                <module>syndo-maven-plugin</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>syndo</module>
+            </modules>
+        </profile>
+
+        <!-- profile configured for github distribution -->
+        <profile>
+            <id>github-distribution</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>syndo</module>
+                <module>syndo-maven-plugin</module>
+            </modules>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/chrisruffalo/yyall</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+
+        <!-- profile configured for sonatype/maven central distribution -->
+        <profile>
+            <id>ossrh-distribution</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>syndo</module>
+                <module>syndo-maven-plugin</module>
+            </modules>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <name>OSSRH Sonatype Nexus</name>
+                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <name>OSSRH Sonatype Nexus</name>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <build>
+                <plugins>
+                    <!-- gpg signing -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- ossh deployment -->
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>ossrh-deploy</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <configuration>
+                                    <serverId>ossrh</serverId>
+                                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
