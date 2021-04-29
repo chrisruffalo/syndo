@@ -3,5 +3,8 @@
 *.iml
 
 # maven transient files
-dependency-reduced-pom.xml
-target
+**/dependency-reduced-pom.xml
+**/target
+
+# no secrets
+**/*-secret.txt

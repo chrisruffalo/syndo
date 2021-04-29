@@ -4,12 +4,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.ruffalo.syndo</groupId>
-    <artifactId>syndo</artifactId>
+    <groupId>io.github.chrisruffalo</groupId>
+    <artifactId>syndo-parent</artifactId>
+    <packaging>pom</packaging>
     <version>${revision}</version>
 
     <name>Syndo</name>
     <description>From the greek 'συνδώ' which means 'interconnect' or 'link'</description>
+
+    <scm>
+        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
+    </scm>
+
+    <modules>
+        <module>syndo</module>
+        <module>syndo-maven-plugin</module>
+    </modules>
 
     <properties>
         <revision>0.2.1</revision>
@@ -17,222 +27,98 @@
         <version.graalvm>21.0.0.2</version.graalvm>
         <version.fabric8.kubernetes-client>5.2.1</version.fabric8.kubernetes-client>
 
-        <main.class>org.ruffalo.syndo.Main</main.class>
-
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
-            <version>${version.fabric8.kubernetes-client}</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.github.chrisruffalo</groupId>
+                <artifactId>syndo</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>1.20</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.8.0</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
-        </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>openshift-client</artifactId>
+                <version>${version.fabric8.kubernetes-client}</version>
+            </dependency>
 
-        <dependency>
-            <groupId>com.google.jimfs</groupId>
-            <artifactId>jimfs</artifactId>
-            <version>1.2</version>
-        </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>1.20</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.8.0</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>1.15</version>
+            </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>2.12.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.12.2</version>
-        </dependency>
+            <dependency>
+                <groupId>com.google.jimfs</groupId>
+                <artifactId>jimfs</artifactId>
+                <version>1.2</version>
+            </dependency>
 
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.81</version>
-        </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>2.12.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>2.12.2</version>
+            </dependency>
 
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>1.81</version>
+            </dependency>
 
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.7.0</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.3</version>
+            </dependency>
 
-    <scm>
-        <developerConnection>scm:git:https://github.com/chrisruffalo/syndo.git</developerConnection>
-    </scm>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>5.7.0</version>
+                <scope>test</scope>
+            </dependency>
 
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/chrisruffalo/syndo</url>
-        </repository>
-    </distributionManagement>
+            <dependency>
+                <groupId>io.github.chrisruffalo</groupId>
+                <artifactId>yyall</artifactId>
+                <version>1.4</version>
+            </dependency>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>build.properties</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>build.properties</include>
-                </includes>
-            </resource>
-        </resources>
+            <!-- for maven plugin development -->
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-plugin-api</artifactId>
+                <version>3.6.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven.plugin-tools</groupId>
+                <artifactId>maven-plugin-annotations</artifactId>
+                <version>3.6.1</version>
+                <scope>provided</scope>
+            </dependency>
 
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
-                <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <shadedClassifierName>executable</shadedClassifierName>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>${main.class}</mainClass>
-                        </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                    </transformers>
-                    <minimizeJar>true</minimizeJar>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                                <exclude>**/MANIFEST.MF</exclude>
-                                <exclude>**/module-info.class</exclude>
-                                <exclude>**/LICENSE</exclude>
-                                <exclude>**/NOTICE</exclude>
-                                <exclude>**/LICENSE.txt</exclude>
-                                <exclude>**/NOTICE.txt</exclude>
-                                <exclude>**/jandex.idx</exclude>
-                                <exclude>**/manifest.vm</exclude>
-                                <exclude>**/*-schema.json</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.fasterxml.jackson.*:*</artifact>
-                            <excludes>
-                                <exclude>**/*Java7*.*</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>fix-line-endings</id>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <tasks>
-                                <fixcrlf srcdir="${project.build.outputDirectory}" eol="unix" includes="**/*.sh,**/Dockerfile"/>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+        </dependencies>
+    </dependencyManagement>
 
-    <profiles>
-        <profile>
-            <id>native</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.graalvm.sdk</groupId>
-                    <artifactId>graal-sdk</artifactId>
-                    <version>${version.graalvm}</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.graalvm.nativeimage</groupId>
-                        <artifactId>native-image-maven-plugin</artifactId>
-                        <version>${version.graalvm}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <phase>package</phase>
-                                <configuration>
-                                    <imageName>syndo</imageName>
-                                    <mainClass>${main.class}</mainClass>
-                                    <skip>false</skip>
-                                    <buildArgs>
-                                        <buildArg>--no-fallback</buildArg>
-                                        <buildArg>--verbose</buildArg>
-                                        <buildArg>--initialize-at-build-time=com.google.common.jimfs</buildArg>
-                                        <buildArg>--initialize-at-build-time=com.google.common.base</buildArg>
-                                        <buildArg>--initialize-at-build-time=com.google.common.collect</buildArg>
-                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.executions.actions.impl.SyndoBuilderAction</buildArg>
-                                        <buildArg>--initialize-at-build-time=org.ruffalo.syndo.info.BuildProperties</buildArg>
-                                        <buildArg>--allow-incomplete-classpath</buildArg>
-                                        <buildArg>--enable-https</buildArg>
-                                        <buildArg>-H:ReflectionConfigurationFiles=${project.basedir}/src/main/graalvm-config/reflect-config.json</buildArg>
-                                        <buildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/graalvm-config/resource-config.json</buildArg>
-                                        <buildArg>-H:+AddAllCharsets</buildArg>
-                                    </buildArgs>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

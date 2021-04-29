@@ -86,14 +86,14 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: syndo-${{ needs.metadata.outputs.pom-ver }}.jar
-          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
           retention-days: 1
 
       - name: 'Upload Executable JAR'
         uses: actions/upload-artifact@v2
         with:
           name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
-          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
           retention-days: 1
 
   build_native:
@@ -138,13 +138,13 @@ jobs:
       - name: Build with Maven
         run: |
           mvn --batch-mode --update-snapshots -DskipTests -Pnative package
-          mv target/syndo${{ matrix.target-suffix }} target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          mv syndo/target/syndo${{ matrix.target-suffix }} syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
 
       - name: 'Upload Binary Executable'
         uses: actions/upload-artifact@v2
         with:
           name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
-          path: target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
           retention-days: 1
 
   create_release:

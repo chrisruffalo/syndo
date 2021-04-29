@@ -1,0 +1,61 @@
+# this example provides a more complicated build using pull secrets and otherwise giving more information and
+# options outside of the other more simple example file
+syndo:
+  build:
+    # the pull secret here can be either managed from the build file
+    # or injected from outside the build process. if no pull secret
+    # can be found and one is specified an exception will be thrown
+    pull-secret: redhat-pull-secret
+  components:
+    # in the context of this sample build "base" would be something that comes from the upstream repository
+    # or otherwise acts as the source image. this image is then used by other layers of the application
+    - name: base
+      from: registry.access.redhat.com/ubi8/openjdk-11:1.3
+      path: base
+    # this is an example UBI8 image that builds installs rpms inside of the buildah container
+    - name: ubi
+      from: registry.access.redhat.com/ubi8/ubi
+      path: ubi
+      storage: vfs # rpm builds REQUIRE vfs storage, otherwise you will get layer duplication/tar/output image errors
+    # this is an example RHEL7 image that builds installs rpms inside of the buildah container
+    - name: rhel
+      from: registry.redhat.io/openjdk/openjdk-11-rhel7
+      path: rhel
+    # this component uses a buildah build script style build but with a build script that
+    # has a different name (create.sh) than the default name
+    - name: application
+      from: base
+      path: application
+      script: create.sh
+    # this component uses a dockerfile build. the dockerfile can be anywhere inside the build but the
+    # entire directory is used as the context for the `buildah bud` build. the "FROM" line of the
+    # dockerfile will be read and resolved either in-cluster or as an upstream image.
+    - name: docker
+      dockerfile: subdir/Dockerfile
+      path: docker
+    # this component also uses a dockerfile build but the 'from' is overridden here instead of being
+    # supplied by the dockerfile.
+    - name: docker-alt
+      from: registry.access.redhat.com/ubi8/openjdk-8:1.3
+      dockerfile: subdir/Dockerfile
+      path: docker
+  aliases:
+    # an alias that lets you specify a build like "-c slim" that will expand to building the base and app components
+    - name: slim
+      # components to include as part of the alias
+      components:
+        - base
+        - application
+  # secrets that are managed by syndo, secrets that already exist in the namespace can be
+  # directly referenced without needing to manage them here.
+  secrets:
+    - name: redhat-pull-secret
+      type: kubernetes.io/dockerconfig
+      contents:
+        # this is the key used for a pull secret
+        - key: .dockercfg
+          # the build will not work without you having a pull secret here
+          # that can be used for pulling from redhat's container registry
+          # at registry.redhat.io
+          file: pull-secret.txt
+
