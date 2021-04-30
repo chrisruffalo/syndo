@@ -15,6 +15,7 @@ import io.github.chrisruffalo.syndo.executions.actions.impl.BuildResolveAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentBuildAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentFilterAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.CreateTarAction;
+import io.github.chrisruffalo.syndo.executions.actions.impl.PermissionCheckAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.VerifyAction;
 import org.slf4j.Logger;
@@ -47,6 +48,10 @@ public class BuildExecution extends OpenShiftExecution {
         // verify configuration
         final VerifyAction verifyAction = new VerifyAction();
         actions.add(verifyAction);
+
+        // check connection to openshift
+        final PermissionCheckAction permissionCheckAction = new PermissionCheckAction();
+        actions.add(permissionCheckAction);
 
         final SyndoBuilderAction syndoBuildAction = new SyndoBuilderAction();
         actions.add(syndoBuildAction);
