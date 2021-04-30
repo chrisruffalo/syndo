@@ -69,7 +69,9 @@ public abstract class OpenShiftExecution extends ActionExecution {
 
         // if skipping the ssl verification disable hostname verification
         if (commandOpenShift.isSslSkipVerify()) {
+            logger().info("Skipping SSL Verification");
             openshiftClientConfig.setDisableHostnameVerification(true);
+            openshiftClientConfig.setTrustCerts(true);
         }
 
         // now we can start a build...

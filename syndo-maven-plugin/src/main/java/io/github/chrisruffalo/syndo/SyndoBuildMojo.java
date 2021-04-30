@@ -74,7 +74,7 @@ public class SyndoBuildMojo extends AbstractMojo {
     /**
      * If true causes Syndo to skip SSL verification with the OpenShift client
      */
-    @Parameter(defaultValue = "false", property = "syndo.ssl.skip")
+    @Parameter(defaultValue = "false", property = "syndo.ssl.skip-verification")
     private boolean skipSslVerification;
 
     /**
@@ -160,21 +160,19 @@ public class SyndoBuildMojo extends AbstractMojo {
         final Execution execution = Execution.get(command);
 
         final Logger logger = LoggerFactory.getLogger(this.getClass());
-        if (!logger.isDebugEnabled()) {
-            if (!System.getenv().isEmpty()) {
-                logger.debug("Environment:");
-                System.getenv().forEach((key, value) -> {
-                    logger.debug("{} = {}", key, value);
-                });
-            }
+        if (!System.getenv().isEmpty()) {
+            logger.debug("Environment:");
+            System.getenv().forEach((key, value) -> {
+                logger.debug("{} = {}", key, value);
+            });
+        }
 
-            if (!System.getProperties().isEmpty()) {
-                logger.debug("Effective properties:");
-                // log system properties
-                System.getProperties().forEach((key, value) -> {
-                    logger.debug("{} = {}", key, value);
-                });
-            }
+        if (!System.getProperties().isEmpty()) {
+            logger.debug("Effective properties:");
+            // log system properties
+            System.getProperties().forEach((key, value) -> {
+                logger.debug("{} = {}", key, value);
+            });
         }
 
         // execute and collect result, throwing an exception on a bad result

@@ -10,7 +10,7 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
 <plugin>
     <groupId>io.github.chrisruffalo</groupId>
     <artifactId>syndo-maven-plugin</artifactId>
-    <version>0.3.2</version>
+    <version>0.3.3</version>
     <executions>
         <execution>
             <!-- bind to the install phase -->
@@ -35,8 +35,11 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
                 <!--           can be part of the build resources so that filtering can affect the directory -->
                 <bootstrapDir>${project.build.directory}/custom-bootstrap</bootstrapDir>
                 <!-- optional: list of components/aliases to build, default is all, should be comma-separated.  -->
-                <!--           uses the -Dsyndo.components system property if not provided.  -->
+                <!--           uses the syndo.components system property  -->
                 <components>all</components>
+                <!-- optional: if set to true then skip ssl verification. false is the default. -->
+                <!--           uses the syndo.ssl.skip-verification system property -->
+                <skipSslVerification>false</skipSslVerification>
             </configuration>
         </execution>
     </executions>
