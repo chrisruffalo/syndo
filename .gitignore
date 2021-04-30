@@ -4,6 +4,7 @@
 
 # maven transient files
 **/dependency-reduced-pom.xml
+**/.flattened-pom.xml
 **/target
 
 # no secrets
