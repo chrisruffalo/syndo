@@ -20,6 +20,9 @@ public class CommandOpenShift extends SubCommand {
     @Parameter(names={"--dry-run", "-D"}, description = "If true a 'dry-run' will create all output artifacts and prepare for a build but will not actually insert resources into OpenShift or initiate any builds")
     private boolean dryRun = false;
 
+    @Parameter(names = {"--ssl-skip-verify"}, description = "If true then skip SSL verification")
+    private boolean sslSkipVerify = false;
+
     public String getNamespace() {
         return namespace;
     }
@@ -42,6 +45,14 @@ public class CommandOpenShift extends SubCommand {
 
     public void setDryRun(boolean dryRun) {
         this.dryRun = dryRun;
+    }
+
+    public boolean isSslSkipVerify() {
+        return sslSkipVerify;
+    }
+
+    public void setSslSkipVerify(boolean sslSkipVerify) {
+        this.sslSkipVerify = sslSkipVerify;
     }
 
     private static List<Path> getDefaultSearchPaths() {
