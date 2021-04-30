@@ -10,7 +10,7 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
 <plugin>
     <groupId>io.github.chrisruffalo</groupId>
     <artifactId>syndo-maven-plugin</artifactId>
-    <version>0.3.1</version>
+    <version>0.3.2</version>
     <executions>
         <execution>
             <!-- bind to the install phase -->
@@ -29,6 +29,7 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
                 <!-- optional: force build, default false, syndo.force system property if not provided -->
                 <force>false</force>
                 <!-- optional: force bootstrap, syndo.bootstrap.force system property if not provided -->
+                <!--           can be provided by syndo.bootstrap.dir system property -->
                 <forceBootstrap>false</forceBootstrap>
                 <!-- optional: bootstrap content directory, where the content is for building the syndo builder container -->
                 <!--           can be part of the build resources so that filtering can affect the directory -->

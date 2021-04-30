@@ -67,6 +67,11 @@ public abstract class OpenShiftExecution extends ActionExecution {
             logger().info("Using default kube configuration");
         }
 
+        // if skipping the ssl verification disable hostname verification
+        if (commandOpenShift.isSslSkipVerify()) {
+            openshiftClientConfig.setDisableHostnameVerification(true);
+        }
+
         // now we can start a build...
         try (
             final KubernetesClient k8s = new DefaultOpenShiftClient(openshiftClientConfig);

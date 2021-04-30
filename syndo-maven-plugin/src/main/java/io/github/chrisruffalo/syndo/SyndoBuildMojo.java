@@ -9,6 +9,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Arrays;
@@ -70,6 +72,12 @@ public class SyndoBuildMojo extends AbstractMojo {
     private String components;
 
     /**
+     * If true causes Syndo to skip SSL verification with the OpenShift client
+     */
+    @Parameter(defaultValue = "false", property = "syndo.ssl.skip")
+    private boolean skipSslVerification;
+
+    /**
      * Properties passed in to the plugin to use in resolution of the build
      * yaml file.
      */
@@ -111,6 +119,7 @@ public class SyndoBuildMojo extends AbstractMojo {
         // set build file and if we should force the build
         build.setBuildFile(this.buildFile.toPath());
         build.setForce(this.force);
+        build.setSslSkipVerify(this.skipSslVerification);
 
         // if a bootstrap directory is specified use it
         if (this.bootstrapDir != null) {
@@ -149,6 +158,24 @@ public class SyndoBuildMojo extends AbstractMojo {
         // create execution
         command.setParsedCommand("build");
         final Execution execution = Execution.get(command);
+
+        final Logger logger = LoggerFactory.getLogger(this.getClass());
+        if (!logger.isDebugEnabled()) {
+            if (!System.getenv().isEmpty()) {
+                logger.debug("Environment:");
+                System.getenv().forEach((key, value) -> {
+                    logger.debug("{} = {}", key, value);
+                });
+            }
+
+            if (!System.getProperties().isEmpty()) {
+                logger.debug("Effective properties:");
+                // log system properties
+                System.getProperties().forEach((key, value) -> {
+                    logger.debug("{} = {}", key, value);
+                });
+            }
+        }
 
         // execute and collect result, throwing an exception on a bad result
         final ExecutionResult result = execution.execute();
