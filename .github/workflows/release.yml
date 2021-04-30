@@ -149,7 +149,7 @@ jobs:
 
       - name: Build with Maven
         run: |
-          mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+          mvn --batch-mode --update-snapshots -DskipTests -Pnative -Dnative-image.xmx=6g package
           mv syndo/target/syndo${{ matrix.target-suffix }} syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
 
       - name: 'Upload Binary Executable'
