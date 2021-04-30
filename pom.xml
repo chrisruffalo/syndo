@@ -168,7 +168,7 @@
                 <repository>
                     <id>github</id>
                     <name>GitHub Packages</name>
-                    <url>https://maven.pkg.github.com/chrisruffalo/yyall</url>
+                    <url>https://maven.pkg.github.com/chrisruffalo/syndo</url>
                 </repository>
             </distributionManagement>
         </profile>

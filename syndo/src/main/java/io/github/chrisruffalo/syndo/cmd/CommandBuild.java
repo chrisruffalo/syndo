@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
-@Parameters
+@Parameters(commandDescription = "Build the provided build file with Syndo")
 public class CommandBuild extends CommandBootstrap {
 
     @Parameter(description = "Path to the YAML build file that describes the build", required = true, converter = StringToPathConverter.class)

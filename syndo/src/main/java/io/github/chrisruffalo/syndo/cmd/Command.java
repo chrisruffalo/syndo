@@ -1,7 +1,11 @@
 package io.github.chrisruffalo.syndo.cmd;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This is the root with all the commands that also handles the parse and returns
@@ -9,8 +13,17 @@ import com.beust.jcommander.Parameter;
  */
 public class Command {
 
-    @Parameter(names={"--help", "-h"}, description = "Print this help message", help = true)
+    /**
+     * Triggers the help display
+     */
+    @Parameter(names={"--help", "-h"}, description = "Print the help message", help = true)
     private boolean help = false;
+
+    /**
+     * Properties passed in that will be added to the resolution of the build yaml file
+     */
+    @DynamicParameter(names = {"--property", "-P"}, description = "Properties that are provided for resolution during Syndo execution")
+    private Map<String, String> properties = new HashMap<>();
 
     private CommandBuild build = new CommandBuild();
 
@@ -78,6 +91,14 @@ public class Command {
 
     public void setCommander(JCommander commander) {
         this.commander = commander;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
     }
 
     public static Command parse(final String[] args) {

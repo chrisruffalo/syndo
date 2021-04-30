@@ -16,12 +16,16 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
             <!-- bind to the install phase -->
             <phase>install</phase>
             <goals>
-                <!-- this is the same as the syndo build command -->
+                <!-- this is the same as the `syndo build` command line option -->
                 <goal>build</goal>
             </goals>
             <configuration>
                 <!-- required: path to the build file that will be used for the build -->
                 <buildFile>${project.directory}/build.yml</buildFile>
+                <!-- optional: namespace, the OpenShift namespace that is the target of the build -->
+                <!--           when not provided uses the kube config's last used namespace -->
+                <!--           can be provided by the syndo.namespace system property -->
+                <namespace>syndo-target</namespace>
                 <!-- optional: force build, default false, syndo.force system property if not provided -->
                 <force>false</force>
                 <!-- optional: force bootstrap, syndo.bootstrap.force system property if not provided -->

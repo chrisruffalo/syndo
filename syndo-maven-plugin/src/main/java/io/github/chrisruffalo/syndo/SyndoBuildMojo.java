@@ -14,6 +14,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Objects;
 
 @Mojo(name = "build")
@@ -24,6 +25,13 @@ public class SyndoBuildMojo extends AbstractMojo {
      */
     @Parameter(property = "syndo.kubePath")
     private File kubeConfigPath;
+
+    /*
+     * Name of the OpenShift project/namespace to build the Syndo
+     * artifacts into and to use as the target of the build process.
+     */
+    @Parameter(property = "syndo.namespace")
+    private String namespace;
 
     /**
      * The configuration file used for the build. A build
@@ -61,6 +69,13 @@ public class SyndoBuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "all", property = "syndo.components")
     private String components;
 
+    /**
+     * Properties passed in to the plugin to use in resolution of the build
+     * yaml file.
+     */
+    @Parameter
+    private Map<String, String> properties;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (this.buildFile == null) {
@@ -86,6 +101,11 @@ public class SyndoBuildMojo extends AbstractMojo {
             }
             // insert kube path to start of search path for kube file
             build.getOpenshiftConfigSearchPaths().add(0, this.kubeConfigPath.toPath());
+        }
+
+        // set namespace
+        if (this.namespace != null && !this.namespace.isEmpty()) {
+            build.setNamespace(namespace);
         }
 
         // set build file and if we should force the build
@@ -119,6 +139,11 @@ public class SyndoBuildMojo extends AbstractMojo {
             });
         } else {
             build.setComponents(Collections.singletonList(this.components));
+        }
+
+        // add properties map if given
+        if(this.properties != null && !this.properties.isEmpty()) {
+            command.setProperties(properties);
         }
 
         // create execution

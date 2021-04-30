@@ -111,7 +111,7 @@ public class BuildExecution extends OpenShiftExecution {
         context.setConfigPath(pathToConfig);
 
         // load syndo root configuration
-        Root config = Loader.read(pathToConfig);
+        Root config = Loader.read(pathToConfig, command.getProperties());
         context.setConfig(config);
 
         return context;

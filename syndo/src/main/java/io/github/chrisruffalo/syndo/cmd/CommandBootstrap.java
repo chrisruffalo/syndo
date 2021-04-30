@@ -7,7 +7,7 @@ import io.github.chrisruffalo.syndo.cmd.converters.StringToPathConverter;
 
 import java.nio.file.Path;
 
-@Parameters
+@Parameters(commandDescription = "Bootstrap the syndo builder into the target namespace")
 public class CommandBootstrap extends CommandOpenShift {
 
     @Parameter(names={"--bootstrap-path", "-P"}, description = "Path to the bootstrap artifacts to use for the Syndo builder container image, providing this option forces the build of builder container", converter = StringToPathConverter.class)
