@@ -153,6 +153,9 @@ public class SyndoBuildMojo extends AbstractMojo {
         // execute and collect result, throwing an exception on a bad result
         final ExecutionResult result = execution.execute();
         if (result.getExitCode() != 0) {
+            if (result.getThrowable() != null) {
+                throw new MojoFailureException(result.getMessage(), result.getThrowable());
+            }
             throw new MojoFailureException(result.getMessage());
         }
     }

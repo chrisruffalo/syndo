@@ -51,7 +51,7 @@ public abstract class ActionExecution extends Execution {
             return executeActions(this.createContext());
         } catch (SyndoException ex) {
             logger().error(ex.getMessage());
-            return new ExecutionResult(1);
+            return new ExecutionResult(1, ex);
         }
     }
 }

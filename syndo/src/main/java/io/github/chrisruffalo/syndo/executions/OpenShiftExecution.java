@@ -104,7 +104,7 @@ public abstract class OpenShiftExecution extends ActionExecution {
             return executeActions(context);
         } catch (KubernetesClientException kce) {
             logger().error("Error connecting to OpenShift: {}", kce.getMessage());
-            return new ExecutionResult(1);
+            return new ExecutionResult(1, kce);
         }
     }
 }
