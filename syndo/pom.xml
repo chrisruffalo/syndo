@@ -194,6 +194,8 @@
                                     <buildArgs>
                                         <buildArg>--no-fallback</buildArg>
                                         <buildArg>--verbose</buildArg>
+                                        <buildArg>-J-Xmx3077M</buildArg>
+                                        <buildArg>-J-Xmx6144M</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.jimfs</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.base</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.collect</buildArg>
