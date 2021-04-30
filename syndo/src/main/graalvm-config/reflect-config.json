@@ -1,20 +1,10 @@
 [
 {
-  "name":"apple.security.AppleProvider",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
   "name":"boolean",
   "allDeclaredFields":true
 },
 {
   "name":"byte[]"
-},
-{
-  "name":"apple.security.AppleProvider",
-  "allDeclaredMethods":true,
-  "allDeclaredFields":true,
-  "allDeclaredConstructors":true
 },
 {
   "name":"ch.qos.logback.classic.encoder.PatternLayoutEncoder",

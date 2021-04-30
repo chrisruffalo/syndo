@@ -8,9 +8,9 @@ The Maven plugin allows maven builds to leverage your Syndo workflow.
 ## Usage
 ```xml
 <plugin>
-    <groupId>io.github.chrisruffalo.syndo</groupId>
+    <groupId>io.github.chrisruffalo</groupId>
     <artifactId>syndo-maven-plugin</artifactId>
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <executions>
         <execution>
             <!-- bind to the install phase -->
