@@ -194,8 +194,6 @@
                                     <buildArgs>
                                         <buildArg>--no-fallback</buildArg>
                                         <buildArg>--verbose</buildArg>
-                                        <buildArg>-J-Xmx3077M</buildArg>
-                                        <buildArg>-J-Xmx6144M</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.jimfs</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.base</buildArg>
                                         <buildArg>--initialize-at-build-time=com.google.common.collect</buildArg>
@@ -205,7 +203,6 @@
                                         <buildArg>--enable-https</buildArg>
                                         <buildArg>-H:ReflectionConfigurationFiles=${project.basedir}/src/main/graalvm-config/reflect-config.json</buildArg>
                                         <buildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/graalvm-config/resource-config.json</buildArg>
-                                        <buildArg>-H:+AddAllCharsets</buildArg>
                                     </buildArgs>
                                 </configuration>
                             </execution>
