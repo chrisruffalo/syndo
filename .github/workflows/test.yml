@@ -1,12 +1,29 @@
 name: Test Syndo
 on:
-  - push
-  - pull_request
+  push:
+      branches-ignore:
+        - release-*
+      tags-ignore:
+        - release-*
+        - prerelease-*
+  pull_request: {}
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # test on all target os
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-2016
     steps:
       - uses: actions/checkout@v2
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:

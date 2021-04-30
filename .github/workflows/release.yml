@@ -1,4 +1,4 @@
-name: Build Syndo Release Artifacts
+name: Build Syndo Artifacts
 on:
   push:
     branches:
@@ -6,10 +6,23 @@ on:
     tags:
       - release-*
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  verify:
+    name: "Test and Verify"
+    # test on all target os
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-2016
     steps:
       - uses: actions/checkout@v2
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:
@@ -18,34 +31,100 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
 
-  build_jar:
-    needs: verify
+  metadata:
+    name: "Calculate Metadata"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Capture pom version
+        run: |
+          echo "POM_VER=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: Capture branch info
+        if: contains(github.ref, 'refs/heads/')
+        run: |
+          echo "PRERELEASE=true" >> $GITHUB_ENV
+          echo "TAG_PREFIX=prerelease-" >> $GITHUB_ENV
+
+      - name: Capture branch info
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: |
+          echo "PRERELEASE=false" >> $GITHUB_ENV
+          echo "TAG_PREFIX=release-" >> $GITHUB_ENV
+
+      - name: Capture outputs
+        id: metadata
+        run: |
+          echo "::set-output name=pom-ver::${{ env.POM_VER }}"
+          echo "::set-output name=decide::${{ env.PRERELEASE }}"
+          echo "::set-output name=short-branch::${GITHUB_REF##*/}"
+          echo "::set-output name=tag-prefix::${{ env.TAG_PREFIX }}"
+
+    outputs:
+      short-branch: ${{ steps.metadata.outputs.short-branch }}
+      pom-ver: ${{ steps.metadata.outputs.pom-ver }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+      tag-prefix: ${{ steps.metadata.outputs.tag-prefix }}
+
+  build_jars:
+    name: "Build JAR Files"
+
+    # dependency on verification
+    needs: [metadata, verify]
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:
           java-version: '8'
           distribution: 'adopt'
+
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots -DskipTests package
 
-  build_native:
-    # dependency on verification
-    needs: verify
+      - name: 'Upload JAR'
+        uses: actions/upload-artifact@v2
+        with:
+          name: syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          retention-days: 1
 
-    # run this job on the current template instantiation
+      - name: 'Upload Executable JAR'
+        uses: actions/upload-artifact@v2
+        with:
+          name: syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-executable.jar
+          retention-days: 1
+
+      - name: 'Upload Maven Plugin'
+        uses: actions/upload-artifact@v2
+        with:
+          name: syndo-maven-plguin-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: syndo-maven-plugin/target/syndo-maven-plugin-${{ needs.metadata.outputs.pom-ver }}.jar
+          retention-days: 1
+
+  build_native:
+    name: "Build Native Executables"
+    # dependency on verification
+    needs: [metadata, verify]
+
+    # build on all target os
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        gu-binary: [gu, gu.cmd]
-        exclude:
+        include:
           - os: ubuntu-latest
-            gu-binary: gu.cmd
-          - os: windows-latest
             gu-binary: gu
+            native-asset-suffix: linux-amd64
+            target-suffix: ""
+          - os: windows-2016
+            gu-binary: gu.cmd
+            native-asset-suffix: windows-amd64.exe
+            target-suffix: .exe
     steps:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
@@ -54,6 +133,14 @@ jobs:
           java: 'java11'
           arch: 'amd64'
 
+      - name: Add msbuild to PATH
+        if: contains(matrix.os, 'windows')
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Add toolkit to path
+        if: contains(matrix.os, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install native-image component
         run: |
           ${{ matrix.gu-binary }} install native-image
@@ -61,4 +148,114 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+        run: |
+          mvn --batch-mode --update-snapshots -DskipTests -Pnative package
+          mv syndo/target/syndo${{ matrix.target-suffix }} syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+
+      - name: 'Upload Binary Executable'
+        uses: actions/upload-artifact@v2
+        with:
+          name: syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          path: syndo/target/syndo-${{ needs.metadata.outputs.pom-ver }}-${{ matrix.native-asset-suffix }}
+          retention-days: 1
+
+  create_release:
+    name: "Create Github Release"
+    runs-on: ubuntu-latest
+    needs: [metadata, build_jars, build_native]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts/
+
+      - name: Delete release/tag if it exists
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          name: ${{ needs.metadata.outputs.short-branch }}
+          tag: ${{ needs.metadata.outputs.tag-prefix }}${{ needs.metadata.outputs.pom-ver }}
+          prerelease: ${{ needs.metadata.outputs.prerelease }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: ${{ github.sha }}
+          artifacts: "/home/runner/work/syndo/syndo/artifacts/**/*"
+          replacesArtifacts: true
+
+  publish_maven:
+    name: "Publish Maven Releases"
+    runs-on: ubuntu-latest
+    needs: [metadata, build_jars, build_native]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+
+      - name: Delete Snapshot
+        if: contains(github.ref, 'refs/heads/')
+        uses: WyriHaximus/github-action-delete-package@master
+        with:
+          packageVersionId: ${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete Release
+        if: "!contains(github.ref, 'refs/heads/')"
+        uses: WyriHaximus/github-action-delete-package@master
+        with:
+          packageVersionId: ${{ needs.metadata.outputs.pom-ver }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Snapshot
+        if: contains(github.ref, 'refs/heads/')
+        run: mvn -Pgithub-distribution -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Release
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: mvn -Pgithub-distribution --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java for publishing to Maven Central Repository
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - name: Install GPG Secret Key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Publish OSSRH Package Snapshot
+        if: contains(github.ref, 'refs/heads/')
+        run: mvn -Possrh-distribution -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} clean deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Publish OSSRH Package Release
+        if: "!contains(github.ref, 'refs/heads/')"
+        run: mvn -Possrh-distribution --batch-mode --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}

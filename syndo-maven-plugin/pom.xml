@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>syndo-parent</artifactId>
+        <groupId>io.github.chrisruffalo</groupId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <packaging>maven-plugin</packaging>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>syndo-maven-plugin</artifactId>
+    <name>Syndo :: Maven Plugin</name>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-plugin-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugin-tools</groupId>
+            <artifactId>maven-plugin-annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.chrisruffalo</groupId>
+            <artifactId>syndo</artifactId>
+            <exclusions>
+                <!-- we don't need logback because SLF4J is built-in to maven plugin api -->
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <!-- we don't need jcommander because we do not actually parse any commands -->
+                <exclusion>
+                    <groupId>com.beust</groupId>
+                    <artifactId>jcommander</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.6.1</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
