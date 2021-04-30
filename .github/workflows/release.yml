@@ -104,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: syndo-maven-plguin-${{ needs.metadata.outputs.pom-ver }}.jar
-          path: syndo-maven-plugin/target/syndo-${{ needs.metadata.outputs.pom-ver }}.jar
+          path: syndo-maven-plugin/target/syndo-maven-plugin-${{ needs.metadata.outputs.pom-ver }}.jar
           retention-days: 1
 
   build_native:
@@ -129,7 +129,7 @@ jobs:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
         with:
-          graalvm: '21.0.0.2'
+          graalvm: '21.1.0.0'
           java: 'java11'
           arch: 'amd64'
 
