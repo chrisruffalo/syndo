@@ -129,7 +129,7 @@ jobs:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
         with:
-          graalvm: '21.1.0.0'
+          graalvm: '21.1.0'
           java: 'java11'
           arch: 'amd64'
 
