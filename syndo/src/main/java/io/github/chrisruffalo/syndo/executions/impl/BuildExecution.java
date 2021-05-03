@@ -1,25 +1,23 @@
 package io.github.chrisruffalo.syndo.executions.impl;
 
 import io.github.chrisruffalo.syndo.cmd.Command;
-import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
-import io.github.chrisruffalo.syndo.executions.actions.impl.BuildPrepareAction;
-import io.github.chrisruffalo.syndo.executions.actions.impl.HashFilterAction;
-import io.github.chrisruffalo.syndo.executions.actions.impl.ManageSecretsAction;
 import io.github.chrisruffalo.syndo.cmd.CommandOpenShift;
 import io.github.chrisruffalo.syndo.config.Loader;
 import io.github.chrisruffalo.syndo.config.Root;
 import io.github.chrisruffalo.syndo.exceptions.SyndoException;
 import io.github.chrisruffalo.syndo.executions.OpenShiftExecution;
 import io.github.chrisruffalo.syndo.executions.actions.Action;
+import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
+import io.github.chrisruffalo.syndo.executions.actions.impl.BuildPrepareAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.BuildResolveAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentBuildAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentFilterAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.CreateTarAction;
+import io.github.chrisruffalo.syndo.executions.actions.impl.HashFilterAction;
+import io.github.chrisruffalo.syndo.executions.actions.impl.ManageSecretsAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.PermissionCheckAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.VerifyAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,8 +30,6 @@ import java.util.List;
  * an OpenShift client and the location of the build yaml file.
  */
 public class BuildExecution extends OpenShiftExecution {
-
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final Command command;
 

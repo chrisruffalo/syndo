@@ -72,12 +72,18 @@ public class Loader {
 
         try {
             // add given properties into the resolver
-            final DefaultStringResolver resolver = new DefaultStringResolver();
-            if(properties != null && !properties.isEmpty()) {
-                resolver.defaultProperties().putAll(properties);
-            }
+            final DefaultStringResolver resolver = new DefaultStringResolver() {
+                @Override
+                public Map<String, String> defaultProperties() {
+                    final Map<String, String> props = super.defaultProperties();
+                    if(properties != null && !properties.isEmpty()) {
+                        props.putAll(properties);
+                    }
+                    return props;
+                }
+            };
             // deserialize into yyall to resolve properties
-            final YyallConfiguration yyallConfiguration = YyallConfiguration.load(Files.newInputStream(yaml));
+            final YyallConfiguration yyallConfiguration = YyallConfiguration.load(Files.newInputStream(yaml), resolver);
             // resolve expressions into new stream
             return mapper().readValue(yyallConfiguration.resolveStream(), Root.class);
         } catch (IOException e) {

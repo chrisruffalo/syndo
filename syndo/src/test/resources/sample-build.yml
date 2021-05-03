@@ -12,6 +12,9 @@ syndo:
       from: core
       to: app
       path: application
+    - name: root
+      from: root
+      path: "${root-parent}"
   aliases:
     - name: quick
       includes:

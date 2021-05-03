@@ -162,17 +162,13 @@ public class SyndoBuildMojo extends AbstractMojo {
         final Logger logger = LoggerFactory.getLogger(this.getClass());
         if (!System.getenv().isEmpty()) {
             logger.debug("Environment:");
-            System.getenv().forEach((key, value) -> {
-                logger.debug("{} = {}", key, value);
-            });
+            System.getenv().forEach((key, value) -> logger.debug("{} = {}", key, value));
         }
 
         if (!System.getProperties().isEmpty()) {
             logger.debug("Effective properties:");
             // log system properties
-            System.getProperties().forEach((key, value) -> {
-                logger.debug("{} = {}", key, value);
-            });
+            System.getProperties().forEach((key, value) -> logger.debug("{} = {}", key, value));
         }
 
         // execute and collect result, throwing an exception on a bad result
