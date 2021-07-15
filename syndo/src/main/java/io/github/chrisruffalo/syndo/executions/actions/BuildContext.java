@@ -1,11 +1,12 @@
 package io.github.chrisruffalo.syndo.executions.actions;
 
 import io.fabric8.openshift.client.OpenShiftClient;
-import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import io.github.chrisruffalo.syndo.cmd.Command;
 import io.github.chrisruffalo.syndo.cmd.CommandBuild;
+import io.github.chrisruffalo.syndo.cmd.CommandOpenShift;
 import io.github.chrisruffalo.syndo.config.Component;
 import io.github.chrisruffalo.syndo.config.Root;
+import io.github.chrisruffalo.syndo.model.DirSourceNode;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -61,6 +62,22 @@ public class BuildContext {
 
     public void setBuildOrder(List<DirSourceNode> buildOrder) {
         this.buildOrder = buildOrder;
+    }
+
+    public CommandOpenShift getOpenshiftCommand() {
+        // find the actual openshift-related command being executed
+        if (this.commandBuild != null) {
+            return this.commandBuild;
+        } else if (this.command != null && this.command.getBuild() != null) {
+            return this.command.getBuild();
+        } else if (this.command != null && this.command.getBootstrap() != null) {
+            return this.command.getBootstrap();
+        } else if (this.command != null && this.command.getStorage() != null) {
+            return this.command.getStorage();
+        }
+
+        // this would lead to an error
+        return null;
     }
 
     public OpenShiftClient getClient() {

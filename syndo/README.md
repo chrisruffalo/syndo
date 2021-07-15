@@ -6,19 +6,24 @@ of administrative overhead.
 Syndo also aims to be efficient meaning that it builds more than one image in a single session which reduces
 the need for pulling images to the build pod every time a new OpenShift build is started.
 
+Syndo is also a tool that allows buildah to be used from any system that can talk to OpenShift: Windows, MacOS, or 
+Linux clients can all use Syndo to create chained buildah builds.
+
 Think of Syndo a little like a simple version of compose for OpenShift. This is a container build orchestration
 tool.
 
 ## Features
 * Creates custom build image and other OpenShift resources (ImageStreams) as needed
 * Supports serialized buildah or Dockerfile (buildah bud) builds
-* FROM/required builds are resolved at each step
+* Resolves FROM/required builds at each step
 * Resolves component build order and builds dependent components after their dependencies
 * Works within a single namespace to produce output images
-* Minimize pushes and pulls especialy with interdependent image chains
+* Minimize pushes and pulls especially with interdependent image chains
 * Allows for selectively building components and resolves component dependencies
 * Can resolve images in the cluster (in accessible namespaces) or external (upstream registries)
-* Images can select their own storage ("vfs" or "overlay") and RPM builds work in UBI images
+* Images can select their own cache ("vfs" or "overlay") and RPM builds work in UBI images
+* Can inject cache storage into Syndo build pods for caching image layers and artifacts between builds (see: [CACHE.md](CACHE.md))
+* Configurable skipping of pushing intermediary builds to the registry
 
 ## Requirements
 * JDK 8 (for the client)
@@ -27,7 +32,7 @@ tool.
 
 ## Future Work
 * Pull secrets for upstream repositories
-* Better work on syndo-builder tags/caching
+* Better work on syndo-runner tags/caching
 * Better output instead of raw build logs (and better log handling / saving of logs)
 
 ## Why Should I Use Syndo?
@@ -44,9 +49,9 @@ All the cluster resources required to build your artifacts will be published and
 
 ## Syndo Build Process
 The Syndo build proceeds in three phases:
-1. Analysis - the configuration file is read and the build plan is created. This determines the order that components will be built in.
-2. Collection - all the artifacts are collected into a single tar file for upload as part of the custom build
-3. Execution - the build process is executed in the order determined by the build plan, images are pushed as they are built
+1. Analysis - analyzes the configuration file is and creates the build plan. This determines the order that components will be built in.
+2. Collection - collects artifacts into a single tar file for upload as part of the custom build
+3. Execution - executes the build process in the order determined by the build plan, and pushes images to the registry
 
 ## Using Syndo
 To use Syndo requires a build yaml file. The build yaml lays out the location of the artifacts that will be used

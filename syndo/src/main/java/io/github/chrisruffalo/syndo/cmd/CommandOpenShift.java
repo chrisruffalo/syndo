@@ -17,11 +17,11 @@ public class CommandOpenShift extends SubCommand {
     @Parameter(names={"--openshift-config-path", "-O"}, description = "Path to the directory where the kube authentication/configuration file can be found", listConverter = StringToPathListConverter.class)
     private List<Path> openshiftConfigSearchPaths = getDefaultSearchPaths();
 
-    @Parameter(names={"--dry-run", "-D"}, description = "If true a 'dry-run' will create all output artifacts and prepare for a build but will not actually insert resources into OpenShift or initiate any builds")
-    private boolean dryRun = false;
-
     @Parameter(names = {"--ssl-skip-verify"}, description = "If true then skip SSL verification")
     private boolean sslSkipVerify = false;
+
+    @Parameter(names = {"--build-log-type", "-L"}, description = "The output type to use from the build logs. Valid values are 'graphic', 'short', 'full', and 'none'. The value 'graphic' will output progress bars, 'short' will only output certain messages, 'full' outputs all build logs, and 'none' suppresses all build output. This value is not case sensitive. Invalid values result in 'full'.")
+    private String buildLogType = "short";
 
     public String getNamespace() {
         return namespace;
@@ -39,20 +39,20 @@ public class CommandOpenShift extends SubCommand {
         this.openshiftConfigSearchPaths = openshiftConfigSearchPaths;
     }
 
-    public boolean isDryRun() {
-        return dryRun;
-    }
-
-    public void setDryRun(boolean dryRun) {
-        this.dryRun = dryRun;
-    }
-
     public boolean isSslSkipVerify() {
         return sslSkipVerify;
     }
 
     public void setSslSkipVerify(boolean sslSkipVerify) {
         this.sslSkipVerify = sslSkipVerify;
+    }
+
+    public String getBuildLogType() {
+        return buildLogType;
+    }
+
+    public void setBuildLogType(String buildLogType) {
+        this.buildLogType = buildLogType;
     }
 
     private static List<Path> getDefaultSearchPaths() {

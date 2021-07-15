@@ -1,9 +1,9 @@
 package io.github.chrisruffalo.syndo.executions.impl;
 
-import io.github.chrisruffalo.syndo.executions.ExecutionResult;
-import io.github.chrisruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import io.github.chrisruffalo.syndo.cmd.CommandExport;
 import io.github.chrisruffalo.syndo.executions.Execution;
+import io.github.chrisruffalo.syndo.executions.ExecutionResult;
+import io.github.chrisruffalo.syndo.executions.actions.impl.BootstrapBuilderAction;
 import io.github.chrisruffalo.syndo.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class ExportExecution extends Execution {
                 path = path.normalize().toAbsolutePath();
             }
             logger.info("Exporting resources to: {}", path);
-            Resources.exportResourceDir(Thread.currentThread().getContextClassLoader().getResource(SyndoBuilderAction.BOOTSTRAP_RESOURCE_PATH), path);
+            Resources.exportResourceDir(Thread.currentThread().getContextClassLoader().getResource(BootstrapBuilderAction.BOOTSTRAP_RESOURCE_PATH), path);
         } catch (URISyntaxException | IOException e) {
             logger.error("Could not export resources: {}", e.getMessage());
             result.setExitCode(1);

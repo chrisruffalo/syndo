@@ -1,8 +1,8 @@
 package io.github.chrisruffalo.syndo.executions.impl;
 
 import io.github.chrisruffalo.syndo.cmd.Command;
-import io.github.chrisruffalo.syndo.executions.ExecutionResult;
 import io.github.chrisruffalo.syndo.executions.Execution;
+import io.github.chrisruffalo.syndo.executions.ExecutionResult;
 
 public class NoCommandExecution extends Execution {
 

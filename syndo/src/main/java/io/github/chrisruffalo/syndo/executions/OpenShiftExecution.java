@@ -101,7 +101,7 @@ public abstract class OpenShiftExecution extends ActionExecution {
             // todo: warn about 'dangerous' namespaces (default, etc)
 
             // create or use existing namespace
-            if (!commandOpenShift.isDryRun() && client.projects().withName(namespace).get() == null) {
+            if (client.projects().withName(namespace).get() == null) {
                 client.projects().createOrReplace(new ProjectBuilder().withMetadata(new ObjectMetaBuilder().withName(namespace).build()).build());
                 logger().debug("Created namespace: {}", namespace);
             }
@@ -110,7 +110,7 @@ public abstract class OpenShiftExecution extends ActionExecution {
             // execute build actions
             return executeActions(context);
         } catch (KubernetesClientException kce) {
-            logger().error("Error connecting to OpenShift: {}", kce.getMessage());
+            logger().error("OpenShift API error: {}", kce.getMessage(), kce);
             return new ExecutionResult(1, kce);
         }
     }

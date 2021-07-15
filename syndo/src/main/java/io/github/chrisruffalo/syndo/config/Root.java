@@ -18,6 +18,11 @@ public class Root {
     private Build build = new Build();
 
     /**
+     * Storage configuration
+     */
+    private Cache cache = new Cache();
+
+    /**
      * A list of components that comprise the possible build targets for a single build.
      */
     private List<Component> components = new LinkedList<>();
@@ -63,5 +68,13 @@ public class Root {
 
     public void setBuild(Build build) {
         this.build = build;
+    }
+
+    public Cache getStorage() {
+        return cache;
+    }
+
+    public void setStorage(Cache cache) {
+        this.cache = cache;
     }
 }

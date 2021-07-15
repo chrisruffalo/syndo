@@ -1,45 +1,43 @@
 package io.github.chrisruffalo.syndo.executions.impl;
 
 import io.github.chrisruffalo.syndo.cmd.Command;
-import io.github.chrisruffalo.syndo.cmd.CommandBootstrap;
 import io.github.chrisruffalo.syndo.cmd.CommandOpenShift;
+import io.github.chrisruffalo.syndo.cmd.CommandCache;
+import io.github.chrisruffalo.syndo.exceptions.SyndoException;
 import io.github.chrisruffalo.syndo.executions.OpenShiftExecution;
 import io.github.chrisruffalo.syndo.executions.actions.Action;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
-import io.github.chrisruffalo.syndo.executions.actions.impl.BootstrapBuilderAction;
-import io.github.chrisruffalo.syndo.executions.actions.impl.PermissionCheckAction;
+import io.github.chrisruffalo.syndo.executions.actions.impl.CacheAugmentationServiceAction;
 
 import java.util.LinkedList;
 import java.util.List;
 
-public class BootstrapExecution extends OpenShiftExecution {
+public class CacheExecution extends OpenShiftExecution {
 
     private final Command command;
-    private final CommandBootstrap bootstrap;
+    private final CommandCache commandCache;
 
-    public BootstrapExecution(Command command) {
+    public CacheExecution(Command command) {
         this.command = command;
-        this.bootstrap = command.getBootstrap();
+        this.commandCache = command.getStorage();
     }
 
     @Override
     protected List<Action> getBuildActions(BuildContext context) {
         final List<Action> actions = new LinkedList<>();
-        actions.add(new PermissionCheckAction());
-        actions.add(new BootstrapBuilderAction());
+        actions.add(new CacheAugmentationServiceAction());
         return actions;
     }
 
     @Override
     public CommandOpenShift getOpenShiftCommand() {
-        return this.bootstrap;
+        return this.commandCache;
     }
 
     @Override
-    public BuildContext createContext() {
+    public BuildContext createContext() throws SyndoException {
         final BuildContext context = new BuildContext();
         context.setCommand(command);
         return context;
     }
-
 }

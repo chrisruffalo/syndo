@@ -5,8 +5,8 @@ import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
 import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import io.github.chrisruffalo.syndo.model.DockerfileSourceNode;
 import io.github.chrisruffalo.syndo.model.ImageRefSourceNode;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import io.github.chrisruffalo.syndo.resources.TarCreator;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,7 +29,7 @@ public class CreateTarAction extends BaseAction {
 
                 final Path dirNodeDir = sourceNode.getDirectory();
                 final String prefix = String.format("%04d_%s", i, sourceNode.getName());
-                logger().info("Adding {} with context {} to {}", sourceNode.getName(), dirNodeDir, prefix);
+                logger().info("Adding component '{}' with context {} to {}", sourceNode.getName(), dirNodeDir, prefix);
 
                 // now add metadata to prefix
                 final Map<String, String> meta = new HashMap<>();

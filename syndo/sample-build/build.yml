@@ -2,6 +2,7 @@
 # actually do anything at all. this is so they can work without downloading artifacts or otherwise trying to create
 # a more complicated build system around the components.
 syndo:
+  # components are the individual builds that syndo can execute
   components:
     # in the context of this sample build "base" would be something that comes from the upstream repository
     # or otherwise acts as the source image. this image is then used by other layers of the application
@@ -20,6 +21,7 @@ syndo:
     - name: docker
       dockerfile: subdir/Dockerfile
       path: docker
+  # aliases allow build groups to be created so that multiple components can be invoked as part of one build
   aliases:
     # an alias that lets you specify a build like "-c slim" that will expand to building the base and app components
     - name: slim
@@ -27,3 +29,17 @@ syndo:
       components:
         - base
         - application
+  # syndo can inject storage into select build pods so that they can use/reuse data from previous builds like
+  # the image layers. this allows builds to be faster but has some caveats and some special behaviors. for more
+  # information see README.md and CACHE.md
+  cache:
+    # enables a build cache, set to false to disable adding a storage claim to the pod
+    enabled: true
+    # set this to a value to use that storage class when creating a claim
+    #storage-class: fast
+    # the name of the storage claim to use
+    #claim-name: syndo-cache
+    # setting this to true (default) makes the PVC mode "ReadWriteMany"
+    shared: true
+    # the size will be used for the resource storage request on the created persistent volume claim
+    size: "10Gi"

@@ -2,6 +2,7 @@ package io.github.chrisruffalo.syndo.executions.actions.impl;
 
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.github.chrisruffalo.syndo.cmd.CommandBuild;
 import io.github.chrisruffalo.syndo.config.Component;
 import io.github.chrisruffalo.syndo.executions.actions.BaseAction;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
@@ -9,7 +10,6 @@ import io.github.chrisruffalo.syndo.model.BuildNode;
 import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import io.github.chrisruffalo.syndo.model.DockerfileSourceNode;
 import io.github.chrisruffalo.syndo.model.ImageRefSourceNode;
-import io.github.chrisruffalo.syndo.cmd.CommandBuild;
 import io.github.chrisruffalo.syndo.resources.Resources;
 
 import java.io.IOException;

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Syndo.sh is the entrypoint for the container build system. It's entire job is to do the following tasks for each component:
 # * Prepare the buildah environment for each component in the build package
 # * Execute the build tasks required in each of the tasks uploaded as part of the build package
@@ -10,15 +9,73 @@
 # set the environment variables for rootless BUILDAH, this isn't done elsewhere because it would add to the complexity
 # of the image and is really only needed at the tool's runtime. setting them here puts them squarely in the responsibility
 # of this script
+
+# set the buildah isolation level
 export BUILDAH_ISOLATION=${BUILDAH_ISOLATION:-chroot}
+
+# set the prefix that will be used to separate log lines from chatter
+export BUILD_LOG_PREFIX="##== LOG ==##"
+
+# this reports status back to the build system
+export BUILD_STATUS_PREFIX="##== STATUS ==##"
+
+# this reports errors back to the build system
+export BUILD_ERROR_PREFIX="##== ERROR ==##"
 
 # create the working directory for syndo
 mkdir -p /syndo/working
 
-# this is the magic that takes the stdin that gets uploaded to
+# determine if caching is available
+CACHE_ENABLED=0
+CACHE=/tmp/cache
+if [[ -d "/cache" ]]; then
+  CACHE=/cache
+  CACHE_ENABLED=1
+  # repeat steps to ensure that shared/cached overlays are the same as the build image
+  if [[ ! -d /var/lib/shared/overlay-images ]]; then
+    mkdir -p /var/lib/shared/overlay-images
+  fi
+  if [[ ! -f /var/lib/shared/overlay-images/images.lock ]]; then
+      touch /var/lib/shared/overlay-images/images.lock
+  fi
+
+  if [[ ! -d /var/lib/shared/overlay-layers ]]; then
+    mkdir -p /var/lib/shared/overlay-layers
+  fi
+  if [[ ! -f /var/lib/shared/overlay-layers/layers.lock ]]; then
+    touch /var/lib/shared/overlay-layers/layers.lock
+  fi
+
+  if [[ ! -d /var/lib/shared/vfs-images ]]; then
+    mkdir -p /var/lib/shared/vfs-images
+  fi
+  if [[ ! -f /var/lib/shared/vfs-images/images.lock ]]; then
+    touch /var/lib/shared/vfs-images/images.lock
+  fi
+
+  if [[ ! -d /var/lib/shared/vfs-layers ]]; then
+    mkdir -p /var/lib/shared/vfs-layers
+  fi
+  if [[ ! -f /var/lib/shared/vfs-layers/layers.lock ]]; then
+    touch /var/lib/shared/vfs-layers/layers.lock
+  fi
+fi
+
+# this is the magic that takes the archive that gets uploaded to
 # the build configuration and puts it where it can be worked on
-echo "Waiting for uploaded tar..."
-tar xz -C /syndo/working
+if [[ "x1" == "x${CACHE_ENABLED}" ]]; then
+  echo "Waiting for /tmp/build-input.tar.gz"
+  while [ ! -f /tmp/build-input.tar.gz ]; do
+    sleep 1;
+  done
+  tar xzf /tmp/build-input.tar.gz -C /syndo/working
+  rm -rf /tmp/build-input.tar.gz
+else
+  # if no cache we can just send to stdin
+  echo "Waiting for uploaded tar..."
+  tar xz -C /syndo/working
+fi
+echo "${BUILD_LOG_PREFIX} Extracted build contents from build archive"
 
 PULL_AUTHFILE=/tmp/.authfile-pull
 PUSH_AUTHFILE=/tmp/.authfile-push
@@ -36,13 +93,14 @@ for DIR in ${DIRECTORIES[@]}; do
     # this normalizes the path so that redundant slashes are removed
     DIR=$(realpath "${DIR}")
     export DIR
+    echo "${BUILD_STATUS_PREFIX} Starting build in ${DIR}"
 
     # change build context to directory
-    cd ${DIR}
+    cd "${DIR}" || exit
 
     # make sure at least a metadata directory exists or skip
     if [[ ! -f ${DIR}/.meta/env ]]; then
-      echo "No metadata found in ${DIR}, skipping"
+      echo "${BUILD_ERROR_PREFIX} No metadata found in ${DIR}, skipping"
       continue
     fi
 
@@ -64,6 +122,10 @@ for DIR in ${DIRECTORIES[@]}; do
     export STORAGE_DRIVER=${STORAGE_DRIVER:-overlay}
     export BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}
 
+    # set up the shared cache and the component/build cache
+    export SHARED_CACHE="${CACHE}/shared" # this is where shared artifacts go (dnf, maven, npm, etc)
+    export COMPONENT_CACHE="${CACHE}/${COMPONENT}" # this is where artifacts go that should only be cached between builds for that component
+
     # get full/real path to dockerfile if dockerfile is given
     if [[ "x" != "x${DOCKERFILE}" ]]; then
       DOCKERFILE=$(realpath "${DIR}/${DOCKERFILE}")
@@ -72,10 +134,10 @@ for DIR in ${DIRECTORIES[@]}; do
     # make sure a build.sh build script exists in the directory or there is a dockerfile
     BUILD_SCRIPT=${BUILD_SCRIPT:-build.sh}
     if [[ "x" == "x${DOCKERFILE}" && ! -f ${DIR}/${BUILD_SCRIPT} ]]; then
-      echo "Could not build in ${DIR}, no ${BUILD_SCRIPT} exists"
+      echo "${BUILD_ERROR_PREFIX} Could not build in ${DIR}, no ${BUILD_SCRIPT} exists"
       exit 1
     elif [[ "x" != "x${DOCKERFILE}" && ! -f "${DOCKERFILE}" ]]; then
-      echo "Dockerfile ${DOCKERFILE} specified but does not exist"
+      echo "${BUILD_ERROR_PREFIX} Dockerfile ${DOCKERFILE} specified but does not exist"
       exit 1
     fi
 
@@ -100,13 +162,13 @@ for DIR in ${DIRECTORIES[@]}; do
       OUTPUT_TARGET=${OUTPUT_NAMESPACE}/${COMPONENT}
     fi
 
-    echo "Building '${COMPONENT}' from '${FROM_REGISTRY}${FROM_IMAGE}' in ${DIR}"
+    echo "${BUILD_LOG_PREFIX} Building '${COMPONENT}' from '${FROM_REGISTRY}${FROM_IMAGE}' in ${DIR}"
 
     # import more values into imports file
     echo "DIR=${DIR}" >> ${DIR}/.meta/imports
-    echo "STORAGE_DRIVER=${STORAGE_DRIVER}" >> ${DIR}/.meta/imports
-    echo "BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}" >> ${DIR}/.meta/imports
-    echo "BUILDAH_ISOLATION=${BUILDAH_ISOLATION}" >> ${DIR}/.meta/imports
+    echo "STORAGE_DRIVER=${STORAGE_DRIVER}" >> "${DIR}/.meta/imports"
+    echo "BUILD_STORAGE_DRIVER=${STORAGE_DRIVER}" >> "${DIR}/.meta/imports"
+    echo "BUILDAH_ISOLATION=${BUILDAH_ISOLATION}" >> "${DIR}/.meta/imports"
 
     # record the start time
     START_TIME="$(date -u +%s)"
@@ -115,19 +177,19 @@ for DIR in ${DIRECTORIES[@]}; do
     if [[ "x" != "x${DOCKERFILE}" ]]; then
       (
         # using --from here allows us to skip messing with the FROM line of the docker file and allows us to get proper resolution of different types of artifacts the way that buildah does it (and not docker)
-        buildah --authfile=${PULL_AUTHFILE} --tls-verify=false --isolation ${BUILDAH_ISOLATION} --storage-driver ${STORAGE_DRIVER} bud --from "${FROM_REGISTRY}${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
+        buildah --authfile=${PULL_AUTHFILE} --tls-verify=false bud --from "${FROM_REGISTRY}${FROM_IMAGE}" -t ${OUTPUT_TARGET} -f ${DOCKERFILE} ${DIR}
       )
       EXIT_CODE=$?
     else
       # pull and create the container context with buildah
-      CONTAINER=$(buildah --storage-driver=${STORAGE_DRIVER} --authfile=${PULL_AUTHFILE} --tls-verify=false from ${FROM_REGISTRY}${FROM_IMAGE})
+      CONTAINER=$(buildah --authfile=${PULL_AUTHFILE} --tls-verify=false from ${FROM_REGISTRY}${FROM_IMAGE})
       if [[ "x" == "x${CONTAINER}" || "x0" != "x$?" ]]; then
-        echo "${COMPONENT} failed to pull ${FROM_REGISTRY}${FROM_IMAGE}" >> /syndo/working/stats
+        echo "${BUILD_ERROR_PREFIX} ${COMPONENT} failed to pull ${FROM_REGISTRY}${FROM_IMAGE}" >> /syndo/working/stats
         exit 1
       fi
       export CONTAINER
       echo "CONTAINER=${CONTAINER}" >> ${DIR}/.meta/imports
-      echo "Using container ${CONTAINER}"
+      echo "${BUILD_STATUS_PREFIX} Using container ${CONTAINER}"
 
       # export some helpful variables for use inside the build.sh uploaded as the build step
       MOUNTPOINT=$(buildah mount ${CONTAINER})
@@ -141,46 +203,48 @@ for DIR in ${DIRECTORIES[@]}; do
       EXIT_CODE=$?
       if [[ "x0" == "x${EXIT_CODE}" ]]; then
         # commit the container to an image and remove the container
-        buildah --storage-driver=${STORAGE_DRIVER} commit --rm ${CONTAINER} ${OUTPUT_TARGET}
+        buildah commit --rm ${CONTAINER} ${OUTPUT_TARGET}
       fi
     fi
 
     if [[ "x0" == "x${EXIT_CODE}" ]]; then
       # push the output image to the target and then the tagged location(s) for this build
       echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}"
-      buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
+      buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
       echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}"
-      buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}
+      buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}
 
       if [[ "x" != "x${HASH}" ]]; then
         echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}"
-        buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}
+        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}
       fi
 
       if [[ "x" != "x${OUTPUT_TAG}" && "latest" != "${OUTPUT_TAG}" ]]; then
         echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}"
-        buildah --storage-driver=${STORAGE_DRIVER} push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
+        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
       fi
 
       # the keep variable signals that we need to keep the image for dependent build steps, if this file does not exist
       # we delete the image so as to save space (we don't want image space to fill up)
       if [[ "xtrue" != "x${KEEP}" ]]; then
-        buildah --storage-driver=${STORAGE_DRIVER} rmi -f ${OUTPUT_TARGET}
+        buildah rmi -f ${OUTPUT_TARGET}
       fi
 
       # output stats time
-      echo "${COMPONENT} (${OUTPUT_TARGET}) finished in $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
+      echo "${BUILD_LOG_PREFIX} ${COMPONENT} (${OUTPUT_TARGET}) finished in $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     else
-      echo "${COMPONENT} failed after $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
+      echo "${BUILD_ERROR_PREFIX} ${COMPONENT} failed after $(($(date -u +%s) - ${START_TIME}))s" >> /syndo/working/stats
     fi
   )
 done
 
 # output all stats if it exists
 if [[ -f /syndo/working/stats ]]; then
-  echo "======================================================================"
-  echo "Build Summary:"
-  echo "======================================================================"
+  echo "${BUILD_LOG_PREFIX} ======================================================================"
+  echo "${BUILD_LOG_PREFIX} Build Summary:"
+  echo "${BUILD_LOG_PREFIX} ======================================================================"
   cat /syndo/working/stats
-  echo "======================================================================"
+  echo "${BUILD_LOG_PREFIX} ======================================================================"
 fi
+
+# adding an explicit exit can cause the log read to fail

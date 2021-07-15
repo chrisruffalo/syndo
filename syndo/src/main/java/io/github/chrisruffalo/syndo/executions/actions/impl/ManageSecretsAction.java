@@ -24,14 +24,6 @@ public class ManageSecretsAction extends BaseAction  {
             return;
         }
 
-        // return during dry run
-        if (context.getCommand().getBuild() != null && context.getCommand().getBuild().isDryRun()) {
-            return;
-        }
-        if (context.getCommand().getBootstrap() != null && context.getCommand().getBootstrap().isDryRun()) {
-            return;
-        }
-
         final OpenShiftClient client = context.getClient();
 
         // insert/update each secret

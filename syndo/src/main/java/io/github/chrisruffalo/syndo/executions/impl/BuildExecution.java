@@ -2,12 +2,12 @@ package io.github.chrisruffalo.syndo.executions.impl;
 
 import io.github.chrisruffalo.syndo.cmd.Command;
 import io.github.chrisruffalo.syndo.cmd.CommandOpenShift;
-import io.github.chrisruffalo.syndo.config.Loader;
 import io.github.chrisruffalo.syndo.config.Root;
 import io.github.chrisruffalo.syndo.exceptions.SyndoException;
 import io.github.chrisruffalo.syndo.executions.OpenShiftExecution;
 import io.github.chrisruffalo.syndo.executions.actions.Action;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
+import io.github.chrisruffalo.syndo.executions.actions.impl.BootstrapBuilderAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.BuildPrepareAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.BuildResolveAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentBuildAction;
@@ -16,12 +16,10 @@ import io.github.chrisruffalo.syndo.executions.actions.impl.CreateTarAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.HashFilterAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.ManageSecretsAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.PermissionCheckAction;
+import io.github.chrisruffalo.syndo.executions.actions.impl.CacheEnableAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.VerifyAction;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -49,8 +47,14 @@ public class BuildExecution extends OpenShiftExecution {
         final PermissionCheckAction permissionCheckAction = new PermissionCheckAction();
         actions.add(permissionCheckAction);
 
-        final SyndoBuilderAction syndoBuildAction = new SyndoBuilderAction();
+        final SyndoBuilderAction syndoBuildAction = new BootstrapBuilderAction();
         actions.add(syndoBuildAction);
+
+        // also prepare storage if enabled (this just installs the webhook CRD and _not_ the service behind it)
+        if (context.getConfig() != null && context.getConfig().getStorage() != null && context.getConfig().getStorage().isEnabled()) {
+            final CacheEnableAction mutatingWebhookAction = new CacheEnableAction();
+            actions.add(mutatingWebhookAction);
+        }
 
         // prepare build
         final BuildPrepareAction prepareAction = new BuildPrepareAction();
@@ -94,25 +98,8 @@ public class BuildExecution extends OpenShiftExecution {
         context.setCommand(this.command);
         context.setCommandBuild(this.command.getBuild());
 
-        // find configuration
-        Path pathToConfig = this.command.getBuild().getBuildFile();
-        // try and resolve path to configuration if it is not absolute
-        if (!pathToConfig.isAbsolute()) {
-            // try and resolve relative to working dir
-            final Path workingDir = Paths.get(System.getProperty("user.dir"));
-            final Path workingDirResolved = workingDir.resolve(pathToConfig);
-            if (!Files.exists(pathToConfig) && Files.exists(workingDirResolved)) {
-                pathToConfig = workingDirResolved;
-            }
-        }
-        if (!Files.exists(pathToConfig)) {
-            throw new SyndoException(String.format("No build yaml could be found at path: %s", pathToConfig));
-        }
-        pathToConfig = pathToConfig.normalize().toAbsolutePath();
-        context.setConfigPath(pathToConfig);
-
-        // load syndo root configuration
-        Root config = Loader.read(pathToConfig, command.getProperties());
+        // find and load configuration
+        final Root config = this.loadConfig(context, this.command, this.command.getBuild().getBuildFile());
         context.setConfig(config);
 
         return context;
