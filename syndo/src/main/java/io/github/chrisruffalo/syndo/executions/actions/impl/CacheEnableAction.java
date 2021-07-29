@@ -29,11 +29,12 @@ public class CacheEnableAction extends BuilderAction {
         }
 
         // get storage configuration
-        final Cache cache = context.getConfig().getStorage();
+        final Cache cache = context.getConfig().getCache();
         if (cache == null || !cache.isEnabled()) {
-            logger().debug("Storage is not enabled, skipping storage install");
+            logger().debug("Cache augmentation is not enabled");
             return;
         }
+        logger().info("Cache augmentation is enabled");
 
         // get client
         final OpenShiftClient client = context.getClient();
@@ -56,7 +57,18 @@ public class CacheEnableAction extends BuilderAction {
             context.setStatus(BuildContext.Status.ERROR);
             return;
         }
-        client.namespaces().withName(context.getNamespace()).createOrReplace(new NamespaceBuilder().editOrNewMetadataLike(new ObjectMetaBuilder().withName(context.getNamespace()).addToLabels(CacheAugmentationServiceAction.STORAGE_ENABLED, "true").build()).endMetadata().build());
+        client.namespaces()
+            .withName(context.getNamespace())
+            .createOrReplace(
+                new NamespaceBuilder()
+                    .editOrNewMetadataLike(
+                        new ObjectMetaBuilder()
+                            .withName(context.getNamespace())
+                            .addToLabels(CacheAugmentationServiceAction.CACHE_ENABLED, "true")
+                            .build()
+                    ).endMetadata()
+            .build()
+        );
 
         // ensure that the mutating web hook service can access this namespace
         // create cluster role tailored to the needs of the storage service

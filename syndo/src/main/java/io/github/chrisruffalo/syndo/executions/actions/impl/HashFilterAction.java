@@ -20,18 +20,21 @@ public class HashFilterAction extends BaseAction {
         // if the hash is present AND no image tag exists with that hash, add the node. if
         // an image tag exists with the hash already, do not add the node
         for (final DirSourceNode node : context.getBuildOrder()) {
-            String outputRef = node.getFullOutputRef();
-            if (outputRef.contains(":")) {
-                if (outputRef.contains("/") && !outputRef.endsWith("/")) {
-                    outputRef = outputRef.substring(outputRef.lastIndexOf("/")+1);
+            // transient images do not need output resolution
+            if (!node.getComponent().isTransientImage()) {
+                String outputRef = node.getFullOutputRef();
+                if (outputRef.contains(":")) {
+                    if (outputRef.contains("/") && !outputRef.endsWith("/")) {
+                        outputRef = outputRef.substring(outputRef.lastIndexOf("/") + 1);
+                    }
+                    final ImageStreamTag ist = client.imageStreamTags().inNamespace(context.getNamespace()).withName(outputRef).get();
+                    if (ist != null) {
+                        logger().info("Found image tag matching component {} content at {}/{}", node.getName(), context.getNamespace(), outputRef);
+                        continue;
+                    }
+                } else {
+                    logger().info("no tag in image ref {} to use", outputRef);
                 }
-                final ImageStreamTag ist = client.imageStreamTags().inNamespace(context.getNamespace()).withName(outputRef).get();
-                if (ist != null) {
-                    logger().info("Found image tag matching component {} content at {}/{}", node.getName(), context.getNamespace(), outputRef);
-                    continue;
-                }
-            } else {
-                logger().info("no tag in image ref {} to use", outputRef);
             }
             dirSourceNodeList.add(node);
         }

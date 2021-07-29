@@ -19,7 +19,7 @@ public class CacheExecution extends OpenShiftExecution {
 
     public CacheExecution(Command command) {
         this.command = command;
-        this.commandCache = command.getStorage();
+        this.commandCache = command.getCache();
     }
 
     @Override

@@ -48,8 +48,8 @@ import java.nio.file.Path;
  */
 public class CacheAugmentationServiceAction extends SyndoBuilderAction {
 
-    public static final String STORAGE_ENABLED = "syndo/storage-enabled";
-    public static final String STORAGE_CLAIM_NAME = "syndo/storage-claim-name";
+    public static final String CACHE_ENABLED = "syndo/cache-enabled";
+    public static final String CACHE_CLAIM_NAME = "syndo/cache-claim-name";
     private static final String BOOTSTRAP_RESOURCE_PATH = "containers/cache-augmentation";
     public static final String WEBHOOK_SERVICE_NAME = "cache-augmentation";
 
@@ -61,8 +61,8 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
     protected Path getResourcePath(BuildContext context) {
         final Command command = context.getCommand();
         final CommandCache storage;
-        if (command != null && command.getStorage() != null) {
-            storage = command.getStorage();
+        if (command != null && command.getCache() != null) {
+            storage = command.getCache();
         } else {
             return SYNDO_RESOURCE_PATH;
         }
@@ -83,15 +83,15 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
 
     @Override
     protected String targetNamespace(BuildContext context) {
-        if (context != null && context.getCommand() != null && context.getCommand().getStorage() != null) {
-            return context.getCommand().getStorage().getNamespace();
+        if (context != null && context.getCommand() != null && context.getCommand().getCache() != null) {
+            return context.getCommand().getCache().getNamespace();
         }
         return CommandCache.DEFAULT_CACHE_NAMESPACE;
     }
 
     @Override
     protected boolean isForced(BuildContext context) {
-        return context != null && context.getCommand() != null && context.getCommand().getStorage() != null && context.getCommand().getStorage().isForceCache();
+        return context != null && context.getCommand() != null && context.getCommand().getCache() != null && context.getCommand().getCache().isForceCache();
     }
 
     @Override
@@ -306,7 +306,7 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
                 new ServiceReferenceBuilder()
                 .withName(WEBHOOK_SERVICE_NAME)
                 .withNamespace(namespace)
-                .withPath("/build-storage-mutator")
+                .withPath("/build-cache-mutator")
                 .withPort(8443)
                 .build()
             )
@@ -334,7 +334,7 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
             .withRules(rule)
             .withNamespaceSelector(
                 new LabelSelectorBuilder()
-                .addToMatchLabels("syndo/storage-enabled", "true")
+                .addToMatchLabels(CACHE_ENABLED, "true")
                 .build()
             )
             .withMatchPolicy("Equivalent")

@@ -7,7 +7,7 @@ const express    = require('express'),
       base64     = require('js-base64').Base64;
 
 // annotations
-const ANNOTATION_STORAGE_ENABLED = 'syndo/storage-enabled';
+const ANNOTATION_CACHE_ENABLED = 'syndo/cache-enabled';
 
 // api url, CA and authorization token
 const apiCA    = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt', 'utf8'),
@@ -68,7 +68,7 @@ function respondOk(res, admissionResponse) {
 }
 
 // process POST
-router.post('/build-storage-mutator', (req, res) => {
+router.post('/build-cache-mutator', (req, res) => {
     // set the proper header for the response
     res.setHeader('Content-Type', 'application/json');
 
@@ -93,8 +93,8 @@ router.post('/build-storage-mutator', (req, res) => {
         let podName = object.metadata.name;
 
         // check adn see if it is already configured
-        if (object.metadata.annotations != null && object.metadata.annotations["syndo/storage-configured"] != null && object.metadata.annotations["syndo/storage-configured"] === true) {
-            console.log(`${podName} is already configured for storage`);
+        if (object.metadata.annotations != null && object.metadata.annotations[ANNOTATION_CACHE_ENABLED] != null && object.metadata.annotations[ANNOTATION_CACHE_ENABLED] === true) {
+            console.log(`${podName} is already configured for caching`);
             respondOk(res, admissionResponse);
             return;
         }
@@ -102,7 +102,7 @@ router.post('/build-storage-mutator', (req, res) => {
         // get the build name so that we can look up the buildconfig and
         // see if it belongs to syndo
         let buildName = object.metadata.labels['openshift.io/build.name'];
-        getApiResource("build.openshift.io", namespace,"builds", buildName, function (err, data) {
+        getApiResource("build.openshift.io", namespace,"builds", buildName, function (err, buildData) {
             if (err != null) {
                 respondOk(res, admissionResponse);
                 console.error(err)
@@ -110,35 +110,35 @@ router.post('/build-storage-mutator', (req, res) => {
             }
 
             // ensure we got a build with a linked buildconfiguration, exit otherwise
-            if (data != null && data.kind != null && data.kind !== 'Build' && data.metadata != null && data.metadata.labels != null && data.metadata.labels['openshift.io/build-config.name'] != null) {
+            if (buildData != null && buildData.kind != null && buildData.kind !== 'Build' && buildData.metadata != null && buildData.metadata.labels != null && buildData.metadata.labels['openshift.io/build-config.name'] != null) {
                 respondOk(res, admissionResponse);
                 return;
             }
 
             // ensure that storage is enabled on the build if storage is not enabled on the build then do not continue. it is possible for the namespace to
             // have it configured (so that the webhook can check the namespace) but for the build to be run without storage
-            let storageEnabled = data.metadata != null && data.metadata.annotations != null && data.metadata.annotations[ANNOTATION_STORAGE_ENABLED] != null && data.metadata.annotations[ANNOTATION_STORAGE_ENABLED] === "true";
-            if (!storageEnabled) {
-                console.log(`storage is not enabled for pod ${podName} executing build ${buildName}`)
+            let cacheEnabled = buildData.metadata != null && buildData.metadata.annotations != null && buildData.metadata.annotations[ANNOTATION_CACHE_ENABLED] != null && buildData.metadata.annotations[ANNOTATION_CACHE_ENABLED] === "true";
+            if (!cacheEnabled) {
+                console.log(`cache is not enabled for pod ${podName} executing build ${buildName} (annotation not found on build)`)
                 respondOk(res, admissionResponse);
                 return;
             }
 
             // get the build configuration instance
-            let buildConfigName = data.metadata.labels['openshift.io/build-config.name'];
-            getApiResource("build.openshift.io", namespace, "buildconfigs", buildConfigName, function (err, data) {
+            let buildConfigName = buildData.metadata.labels['openshift.io/build-config.name'];
+            getApiResource("build.openshift.io", namespace, "buildconfigs", buildConfigName, function (err, buildConfigData) {
                 if (err != null) {
                     respondOk(res, admissionResponse);
                     console.error(err);
                     return;
                 }
 
-                // ensure that the syndo storage enabled annotation is on the build configuration
-                if(data != null && data.kind != null && data.metadata != null && data.metadata.annotations != null && data.metadata.annotations[ANNOTATION_STORAGE_ENABLED] != null && data.metadata.annotations[ANNOTATION_STORAGE_ENABLED] === "true") {
+                // ensure that the syndo cache enabled annotation is on the build configuration
+                if(buildConfigData != null && buildConfigData.kind != null && buildConfigData.metadata != null && buildConfigData.metadata.annotations != null && buildConfigData.metadata.annotations[ANNOTATION_CACHE_ENABLED] != null && buildConfigData.metadata.annotations[ANNOTATION_CACHE_ENABLED] === "true") {
                     // if we can find a pvc name then patch the pod
-                    let claimName = data.metadata.annotations['syndo/storage-claim-name'];
+                    let claimName = buildConfigData.metadata.annotations['syndo/cache-claim-name'];
                     if (claimName != null && claimName !== "") {
-                        console.log(`storage is enabled for pod ${podName} executing build config ${buildConfigName}, using claim ${claimName}`)
+                        console.log(`cache is enabled for pod ${podName} executing build config ${buildConfigName}, using claim ${claimName}`)
 
                         // find the `/var/lib/containers/storage` volume mount index and replace the
                         // emptydir with a subpath mount on the cache-volume
@@ -159,7 +159,7 @@ router.post('/build-storage-mutator', (req, res) => {
                                 "op": "add",
                                 "path": "/metadata/annotations",
                                 "value": {
-                                    "syndo/storage-configured": "true"
+                                    "syndo/cache-configured": "true"
                                 }
                             },
                             // add the volume to the volumes list
@@ -222,10 +222,10 @@ router.post('/build-storage-mutator', (req, res) => {
                         // with additional help from: https://github.com/nsubrahm/k8s-mutating-webhook/blob/master/webhook/app/mutate.js
                         admissionResponse.response['patch'] = base64.encode(JSON.stringify(patch));
                     } else {
-                        console.log(`storage is enabled for pod ${podName} executing build config ${buildConfigName} but no claim given`)
+                        console.log(`cache is enabled for pod ${podName} executing build config ${buildConfigName} but no claim given`)
                     }
                 } else {
-                    console.log(`storage is not enabled for pod ${podName} executing build config ${buildConfigName}`)
+                    console.log(`cache is not enabled for pod ${podName} executing build config ${buildConfigName} (annotation not on buildconfig)`)
                 }
 
                 // respond

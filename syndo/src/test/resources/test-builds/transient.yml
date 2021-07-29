@@ -1,0 +1,14 @@
+# simple build with transient phases
+syndo:
+  components:
+    - name: alpha
+      from: "upstream1"
+      path: .
+      transient: true
+    - name: beta
+      from: alpha
+      path: .
+      transient: true
+    - name: charlie
+      from: beta
+      path: .

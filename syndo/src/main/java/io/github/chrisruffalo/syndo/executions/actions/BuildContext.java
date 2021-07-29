@@ -72,8 +72,8 @@ public class BuildContext {
             return this.command.getBuild();
         } else if (this.command != null && this.command.getBootstrap() != null) {
             return this.command.getBootstrap();
-        } else if (this.command != null && this.command.getStorage() != null) {
-            return this.command.getStorage();
+        } else if (this.command != null && this.command.getCache() != null) {
+            return this.command.getCache();
         }
 
         // this would lead to an error

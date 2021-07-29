@@ -37,6 +37,7 @@ public class CreateTarAction extends BaseAction {
                 meta.put("OUTPUT_TARGET", sourceNode.getOutputRef());
                 meta.put("HASH", sourceNode.getHash());
                 meta.put("BUILD_SCRIPT", sourceNode.getScript());
+                meta.put("TRANSIENT", sourceNode.getComponent().isTransientImage() ? "true" : "false");
 
                 if(sourceNode instanceof DockerfileSourceNode) {
                     meta.put("DOCKERFILE", ((DockerfileSourceNode)sourceNode).getDockerfile());

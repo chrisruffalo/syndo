@@ -25,6 +25,10 @@ tool.
 * Can inject cache storage into Syndo build pods for caching image layers and artifacts between builds (see: [CACHE.md](CACHE.md))
 * Configurable skipping of pushing intermediary builds to the registry
 
+## Future Development
+* Build parallelization (automatic / customizable)
+* More condensed feedback of builds in the console
+
 ## Requirements
 * JDK 8 (for the client)
 * OpenShift 4.7+

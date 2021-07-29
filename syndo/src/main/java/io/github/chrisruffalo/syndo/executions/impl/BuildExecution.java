@@ -50,11 +50,9 @@ public class BuildExecution extends OpenShiftExecution {
         final SyndoBuilderAction syndoBuildAction = new BootstrapBuilderAction();
         actions.add(syndoBuildAction);
 
-        // also prepare storage if enabled (this just installs the webhook CRD and _not_ the service behind it)
-        if (context.getConfig() != null && context.getConfig().getStorage() != null && context.getConfig().getStorage().isEnabled()) {
-            final CacheEnableAction mutatingWebhookAction = new CacheEnableAction();
-            actions.add(mutatingWebhookAction);
-        }
+        // this will check for and use cache augmentation if it is enabled
+        final CacheEnableAction cacheEnableAction = new CacheEnableAction();
+        actions.add(cacheEnableAction);
 
         // prepare build
         final BuildPrepareAction prepareAction = new BuildPrepareAction();

@@ -40,6 +40,6 @@ syndo:
     # the name of the storage claim to use
     #claim-name: syndo-cache
     # setting this to true (default) makes the PVC mode "ReadWriteMany"
-    shared: true
+    shared: false
     # the size will be used for the resource storage request on the created persistent volume claim
     size: "10Gi"

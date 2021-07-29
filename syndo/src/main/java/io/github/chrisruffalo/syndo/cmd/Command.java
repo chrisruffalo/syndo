@@ -33,7 +33,7 @@ public class Command {
 
     private CommandVersion version = new CommandVersion();
 
-    private CommandCache storage = new CommandCache();
+    private CommandCache cache = new CommandCache();
 
     private String parsedCommand;
 
@@ -79,12 +79,12 @@ public class Command {
         this.version = version;
     }
 
-    public CommandCache getStorage() {
-        return storage;
+    public CommandCache getCache() {
+        return cache;
     }
 
-    public void setStorage(CommandCache storage) {
-        this.storage = storage;
+    public void setCache(CommandCache cache) {
+        this.cache = cache;
     }
 
     public String getParsedCommand() {
@@ -120,7 +120,7 @@ public class Command {
                 .addCommand("bootstrap", command.getBootstrap())
                 .addCommand("export", command.getExport())
                 .addCommand("version", command.getVersion())
-                .addCommand("storage", command.getStorage())
+                .addCommand("cache", command.getCache())
                 .programName("syndo")
                 .build();
 

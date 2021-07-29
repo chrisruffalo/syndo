@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
 });
 
 // include specific application handler
-const handler = require('./storage-mutator-handler.js');
+const handler = require('./cache-mutator-handler.js');
 app.use('', handler);
 
 // start server

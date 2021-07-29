@@ -40,6 +40,8 @@ import java.nio.file.StandardCopyOption;
 public class ComponentBuildAction extends BuilderAction {
 
     private static final Logger logger = LoggerFactory.getLogger(SyndoBuilderAction.class);
+
+    private static final String UPLOAD_TARGET_PATH = "/tmp/build-input.tar.gz";
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
     @Override
@@ -62,23 +64,23 @@ public class ComponentBuildAction extends BuilderAction {
 
         // decide if the storage is enabled for this configuration
         Cache cache = null;
-        boolean storageEnabled = context.getConfig() != null && context.getConfig().getStorage() != null && context.getConfig().getStorage().isEnabled();
-        if (storageEnabled) {
-            cache = context.getConfig().getStorage();
+        boolean cacheEnabled = context.getConfig() != null && context.getConfig().getCache() != null && context.getConfig().getCache().isEnabled();
+        if (cacheEnabled) {
+            cache = context.getConfig().getCache();
         }
         // but allow the command to override the storage configuration
         if(context.getCommandBuild() != null && context.getCommandBuild().isStorageDisabled()) {
-            storageEnabled = false;
+            cacheEnabled = false;
         }
 
         // create syndo build configuration
         final ObjectMetaBuilder metaBuilder = new ObjectMetaBuilder()
                 .withName(SYNDO)
                 .withNamespace(targetNamespace)
-                .addToLabels(CacheAugmentationServiceAction.STORAGE_ENABLED, Boolean.toString(storageEnabled))
-                .addToAnnotations(CacheAugmentationServiceAction.STORAGE_ENABLED, Boolean.toString(storageEnabled));
+                .addToLabels(CacheAugmentationServiceAction.CACHE_ENABLED, Boolean.toString(cacheEnabled))
+                .addToAnnotations(CacheAugmentationServiceAction.CACHE_ENABLED, Boolean.toString(cacheEnabled));
 
-        if (storageEnabled) {
+        if (cacheEnabled) {
             // name the claim
             final String claimName = cache.getClaimName();
 
@@ -91,6 +93,7 @@ public class ComponentBuildAction extends BuilderAction {
                     .withNamespace(targetNamespace)
                     .endMetadata()
                     .withNewSpec()
+                    .withAccessModes("ReadWriteOnce")
                     .withNewResources()
                     .addToRequests("storage", new Quantity(cache.getSize())) // todo: configure?
                     .endResources()
@@ -121,7 +124,7 @@ public class ComponentBuildAction extends BuilderAction {
             }
 
             // add volume claim name to the meta builder so that the webhook can read the annotation
-            metaBuilder.addToAnnotations(CacheAugmentationServiceAction.STORAGE_CLAIM_NAME, claimName);
+            metaBuilder.addToAnnotations(CacheAugmentationServiceAction.CACHE_CLAIM_NAME, claimName);
         }
 
         final CustomBuildStrategy customBuildStrategy = new CustomBuildStrategyBuilder()
@@ -160,7 +163,7 @@ public class ComponentBuildAction extends BuilderAction {
         final Build build;
         try {
             logger.info("Building from tar: {} ({})", context.getOutputTar(), FileUtils.byteCountToDisplaySize(Files.size(context.getOutputTar())));
-            if (storageEnabled) {
+            if (cacheEnabled) {
                 // copy the file out of the jimfs if it is not available as a File
                 boolean deleteTempFile = false;
                 File source;
@@ -182,6 +185,7 @@ public class ComponentBuildAction extends BuilderAction {
                         .withNewMetadata()
                         .withName(SYNDO)
                         .withNamespace(targetNamespace)
+                        .addToAnnotations(CacheAugmentationServiceAction.CACHE_ENABLED, Boolean.toString(cacheEnabled))
                         .endMetadata()
                         .withNewBinary()
                         .endBinary()
@@ -200,7 +204,9 @@ public class ComponentBuildAction extends BuilderAction {
                 } while (buildPod.get() == null || !buildPod.get().getStatus().getPhase().toLowerCase().contains("running"));
 
                 // copy file in to build pod
-                buildPod.file("/tmp/build-input.tar.gz").upload(source.toPath());
+                logger().info("Uploading {} to {}", source.toPath().normalize(), UPLOAD_TARGET_PATH);
+                buildPod.file(UPLOAD_TARGET_PATH).upload(source.toPath());
+                logger().info("Uploaded {}", UPLOAD_TARGET_PATH);
 
                 // delete the temporary file on exit
                 if(deleteTempFile) {
@@ -247,7 +253,7 @@ public class ComponentBuildAction extends BuilderAction {
         }
 
         // if storage is enabled the build needs a little help to be marked as completed or failed immediately
-        if (storageEnabled) {
+        if (cacheEnabled) {
             build.setStatus(new BuildStatusBuilder().withNewPhase(syndoBuildSuccess ? "Complete" : "Failed").build());
             client.builds().inNamespace(targetNamespace).withName(build.getMetadata().getName())
                     .createOrReplace(build);

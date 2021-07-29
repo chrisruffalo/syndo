@@ -6,7 +6,7 @@ import io.github.chrisruffalo.syndo.cmd.converters.StringToPathConverter;
 
 import java.nio.file.Path;
 
-@Parameters(commandDescription = "Install the storage webhook service for augmenting Syndo builds with a storage cache. This requires the current user to have permissions to create cluster role bindings and mutating webhook configurations as well as deployment configurations, pods, and services.")
+@Parameters(commandDescription = "Install the build cache webhook service for augmenting Syndo builds with a cache. This requires the current user to have permissions to create cluster role bindings and mutating webhook configurations as well as deployment configurations, pods, and services.")
 public class CommandCache extends CommandOpenShift {
 
     public static final String DEFAULT_CACHE_NAMESPACE = "syndo-infra";

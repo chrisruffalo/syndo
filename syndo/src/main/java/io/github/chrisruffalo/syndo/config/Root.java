@@ -70,11 +70,11 @@ public class Root {
         this.build = build;
     }
 
-    public Cache getStorage() {
+    public Cache getCache() {
         return cache;
     }
 
-    public void setStorage(Cache cache) {
+    public void setCache(Cache cache) {
         this.cache = cache;
     }
 }

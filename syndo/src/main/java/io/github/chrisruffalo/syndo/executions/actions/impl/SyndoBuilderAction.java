@@ -139,7 +139,7 @@ public abstract class SyndoBuilderAction extends BuilderAction {
             try {
                 dockerFileContentsString = new String(IOUtils.toByteArray(stream)).replaceAll("\\r\\n?", "\n");
             } catch (IOException e) {
-                logger().error("Could not read embedded dockerfile for syndo-runner: {}", e.getMessage());
+                logger().error("Could not read embedded dockerfile for {}: {}", baseImageName, e.getMessage());
                 context.setStatus(BuildContext.Status.ERROR);
                 return;
             }
@@ -204,7 +204,7 @@ public abstract class SyndoBuilderAction extends BuilderAction {
                 return;
             }
             if (!bootstrapSucceeded) {
-                logger().error("Could not build the syndo build container, cannot proceed");
+                logger().error("Could not build {}, cannot proceed", baseImageName);
                 context.setStatus(BuildContext.Status.ERROR);
             }
         } else {

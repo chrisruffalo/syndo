@@ -26,11 +26,11 @@ export BUILD_ERROR_PREFIX="##== ERROR ==##"
 mkdir -p /syndo/working
 
 # determine if caching is available
-CACHE_ENABLED=0
+CACHE_ENABLED=false
 CACHE=/tmp/cache
 if [[ -d "/cache" ]]; then
-  CACHE=/cache
-  CACHE_ENABLED=1
+  CACHE="/cache"
+  CACHE_ENABLED="true"
   # repeat steps to ensure that shared/cached overlays are the same as the build image
   if [[ ! -d /var/lib/shared/overlay-images ]]; then
     mkdir -p /var/lib/shared/overlay-images
@@ -63,8 +63,8 @@ fi
 
 # this is the magic that takes the archive that gets uploaded to
 # the build configuration and puts it where it can be worked on
-if [[ "x1" == "x${CACHE_ENABLED}" ]]; then
-  echo "Waiting for /tmp/build-input.tar.gz"
+if [[ "xtrue" == "x${CACHE_ENABLED}" ]]; then
+  echo "Waiting for upload to /tmp/build-input.tar.gz..."
   while [ ! -f /tmp/build-input.tar.gz ]; do
     sleep 1;
   done
@@ -72,7 +72,7 @@ if [[ "x1" == "x${CACHE_ENABLED}" ]]; then
   rm -rf /tmp/build-input.tar.gz
 else
   # if no cache we can just send to stdin
-  echo "Waiting for uploaded tar..."
+  echo "Waiting for tar on stdin..."
   tar xz -C /syndo/working
 fi
 echo "${BUILD_LOG_PREFIX} Extracted build contents from build archive"
@@ -208,26 +208,30 @@ for DIR in ${DIRECTORIES[@]}; do
     fi
 
     if [[ "x0" == "x${EXIT_CODE}" ]]; then
-      # push the output image to the target and then the tagged location(s) for this build
-      echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}"
-      buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
-      echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}"
-      buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}
 
-      if [[ "x" != "x${HASH}" ]]; then
-        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}"
-        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}
-      fi
+      # transient images are not pushed after commit
+      if [[ "xtrue" != "x${TRANSIENT}" ]]; then
+        # push the output image to the target and then the tagged location(s) for this build
+        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}"
+        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}
+        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}"
+        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OPENSHIFT_BUILD_NAME}
 
-      if [[ "x" != "x${OUTPUT_TAG}" && "latest" != "${OUTPUT_TAG}" ]]; then
-        echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}"
-        buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
-      fi
+        if [[ "x" != "x${HASH}" ]]; then
+          echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}"
+          buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${HASH}
+        fi
 
-      # the keep variable signals that we need to keep the image for dependent build steps, if this file does not exist
-      # we delete the image so as to save space (we don't want image space to fill up)
-      if [[ "xtrue" != "x${KEEP}" ]]; then
-        buildah rmi -f ${OUTPUT_TARGET}
+        if [[ "x" != "x${OUTPUT_TAG}" && "latest" != "${OUTPUT_TAG}" ]]; then
+          echo "Pushing ${OUTPUT_TARGET} -> ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}"
+          buildah push --tls-verify=false --authfile=${PUSH_AUTHFILE} ${OUTPUT_TARGET} ${OUTPUT_REGISTRY}/${OUTPUT_TARGET}:${OUTPUT_TAG}
+        fi
+
+        # the keep variable signals that we need to keep the image for dependent build steps, if this file does not exist
+        # we delete the image so as to save space (we don't want image space to fill up)
+        if [[ "xtrue" != "x${KEEP}" ]]; then
+          buildah rmi -f ${OUTPUT_TARGET}
+        fi
       fi
 
       # output stats time

@@ -53,6 +53,8 @@ public class BuildResolveAction extends BaseAction {
         // build everything into the node map
         final Map<String, String> outputRefResolveMap = new LinkedHashMap<>();
         final Map<String, DirSourceNode> sourceNodeMap = new LinkedHashMap<>();
+
+        // resolve the locations of the components
         context.getComponentMap().forEach((key, component) -> {
             DirSourceNode node = null;
             if (component.getDockerfile() != null && !component.getDockerfile().isEmpty()) {
@@ -65,14 +67,15 @@ public class BuildResolveAction extends BaseAction {
             // resolve the component path
             Path componentDir = Paths.get(component.getPath());
             if (!componentDir.isAbsolute()) {
-                if (!Files.exists(componentDir)) {
-                    // try and resolve relative to build yaml
-                    componentDir = context.getConfigPath().getParent().resolve(componentDir).normalize().toAbsolutePath();
-                }
+                // try and resolve relative to build yaml
+                componentDir = context.getConfigPath().getParent().resolve(componentDir).toAbsolutePath().normalize();
                 if (!Files.exists(componentDir)) {
                     // try and resolve relative to working dir
                     final Path workingDir = Paths.get(System.getProperty("user.dir"));
-                    componentDir = workingDir.resolve(componentDir).normalize().toAbsolutePath();
+                    componentDir = workingDir.resolve(componentDir).toAbsolutePath().normalize();
+                }
+                if (Files.exists(componentDir.toAbsolutePath())) {
+                    componentDir = componentDir.toAbsolutePath().normalize();
                 }
             }
             if (!Files.exists(componentDir)) {
@@ -89,7 +92,7 @@ public class BuildResolveAction extends BaseAction {
                 final String script = node.getScript();
                 final Path scriptPath = componentDir.resolve(script);
                 if (!Files.exists(scriptPath)) {
-                    logger().error("Could not find build script '{}' for component '{}', skipping", node.getScript(), component.getName());
+                    logger().error("Could not find build script '{}' for component '{}', skipping", scriptPath, component.getName());
                     return;
                 }
             }

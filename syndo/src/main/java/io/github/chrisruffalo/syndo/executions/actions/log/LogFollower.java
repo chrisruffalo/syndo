@@ -2,10 +2,7 @@ package io.github.chrisruffalo.syndo.executions.actions.log;
 
 import io.fabric8.kubernetes.client.dsl.LogWatch;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 
 public abstract class LogFollower implements Runnable {
 
@@ -46,7 +43,7 @@ public abstract class LogFollower implements Runnable {
     public void run() {
         try (
             final InputStream stream = this.getLogWatch().getOutput();
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(stream)));
         ) {
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                 this.processLine(line);
