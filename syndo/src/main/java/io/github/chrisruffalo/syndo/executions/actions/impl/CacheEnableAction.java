@@ -22,7 +22,7 @@ import io.github.chrisruffalo.syndo.permissions.PermTuple;
 public class CacheEnableAction extends BuilderAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // need configuration
         if (context.getConfig() == null) {
             return;

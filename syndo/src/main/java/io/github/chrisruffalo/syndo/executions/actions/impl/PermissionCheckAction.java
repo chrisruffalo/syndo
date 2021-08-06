@@ -12,7 +12,7 @@ import java.util.List;
 public class PermissionCheckAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         final CommandOpenShift commandOpenShift = context.getCommandBuild() != null ? context.getCommandBuild() : context.getCommand().getBootstrap();
         if (commandOpenShift == null) {
             logger().warn("Permission Checks should not be performed outside of an OpenShift context");

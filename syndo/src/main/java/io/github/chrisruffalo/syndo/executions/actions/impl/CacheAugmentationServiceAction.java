@@ -106,7 +106,7 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
     }
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // get client from context
         final OpenShiftClient client = context.getClient();
         final String namespace = this.targetNamespace(context);
@@ -138,7 +138,7 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
         }
 
         // defer to syndo embedded resource
-        super.build(context);
+        super.execute(context);
 
         if (this.savedImageName == null || this.savedImageName.isEmpty()) {
             context.setStatus(BuildContext.Status.ERROR);

@@ -80,7 +80,7 @@ public abstract class SyndoBuilderAction extends BuilderAction {
     }
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // get client from context
         final OpenShiftClient client = context.getClient();
         final String namespace = this.targetNamespace(context);

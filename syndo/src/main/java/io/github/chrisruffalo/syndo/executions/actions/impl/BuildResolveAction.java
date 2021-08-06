@@ -48,7 +48,7 @@ public class BuildResolveAction extends BaseAction {
     }
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
 
         // build everything into the node map
         final Map<String, String> outputRefResolveMap = new LinkedHashMap<>();

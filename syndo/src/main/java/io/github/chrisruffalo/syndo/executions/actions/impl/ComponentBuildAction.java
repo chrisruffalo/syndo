@@ -26,6 +26,7 @@ import io.github.chrisruffalo.syndo.config.Cache;
 import io.github.chrisruffalo.syndo.config.Root;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
 import io.github.chrisruffalo.syndo.executions.actions.BuilderAction;
+import io.github.chrisruffalo.syndo.executions.actions.post.CleanupImageStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class ComponentBuildAction extends BuilderAction {
     public static final String SYNDO_OUT = SYNDO + "-fake-out";
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // get client from context
         final OpenShiftClient client = context.getClient();
         final String targetNamespace = context.getNamespace();
@@ -59,6 +60,8 @@ public class ComponentBuildAction extends BuilderAction {
                 .withMetadata(isMeta)
                 .build();
         is = client.imageStreams().inNamespace(targetNamespace).createOrReplace(is);
+        // clean up the image stream when done
+        context.addPostAction(new CleanupImageStream(is.getMetadata().getName()));
 
         final String imageStreamTagName = context.getBuilderImageName();
 
@@ -237,12 +240,6 @@ public class ComponentBuildAction extends BuilderAction {
             logger.error("Could not wait for component build to complete: {}", e.getMessage());
             context.setStatus(BuildContext.Status.ERROR);
             return;
-        }
-
-        // delete fake output image stream since it was just used to temporarily provide output credentials for the
-        // buildah custom build process
-        if (client.imageStreams().inNamespace(targetNamespace).withName(SYNDO_OUT).get() != null) {
-            client.imageStreams().inNamespace(targetNamespace).withName(SYNDO_OUT).delete();
         }
 
         if (syndoBuildSuccess) {

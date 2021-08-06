@@ -113,9 +113,9 @@ public class BuildResolveActionTest {
             context.setCommandBuild(command.getBuild());
         }
         final BuildPrepareAction prepare = new BuildPrepareAction();
-        prepare.build(context);
+        prepare.execute(context);
         final BuildResolveAction action = new BuildResolveAction();
-        action.build(context);
+        action.execute(context);
         return context;
     }
 

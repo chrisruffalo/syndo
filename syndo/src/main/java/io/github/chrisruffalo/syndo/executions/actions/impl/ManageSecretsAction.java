@@ -16,7 +16,7 @@ import java.nio.file.Paths;
 public class ManageSecretsAction extends BaseAction  {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // for each secret in the configuration ensure that the secret exists in the target namespace
         final Root config = context.getConfig();
         if (config.getSecrets() == null || config.getSecrets().isEmpty()) {

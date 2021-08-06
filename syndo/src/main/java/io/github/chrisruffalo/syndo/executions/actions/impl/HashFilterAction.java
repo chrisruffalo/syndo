@@ -12,7 +12,7 @@ import java.util.List;
 public class HashFilterAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         final OpenShiftClient client = context.getClient();
         final List<DirSourceNode> dirSourceNodeList = new LinkedList<>();
 

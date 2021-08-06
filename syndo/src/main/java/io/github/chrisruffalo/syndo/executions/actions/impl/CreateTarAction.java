@@ -17,7 +17,7 @@ import java.util.Map;
 public class CreateTarAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         final Path outputTar = context.getOutputTar();
         try (final TarArchiveOutputStream tarStream = TarCreator.createTar(outputTar)) {
             final List<DirSourceNode> buildOrder = context.getBuildOrder();
