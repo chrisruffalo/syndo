@@ -72,7 +72,7 @@ public class ComponentBuildAction extends BuilderAction {
             cache = context.getConfig().getCache();
         }
         // but allow the command to override the storage configuration
-        if(context.getCommandBuild() != null && context.getCommandBuild().isStorageDisabled()) {
+        if(context.getCommandBuild() != null && context.getCommandBuild().isCacheDisabled()) {
             cacheEnabled = false;
         }
 

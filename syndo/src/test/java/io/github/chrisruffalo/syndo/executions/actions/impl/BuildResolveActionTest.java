@@ -109,9 +109,6 @@ public class BuildResolveActionTest {
         context.setConfig(Loader.read(buildFile));
         context.setConfigPath(buildFile);
         context.setCommand(command);
-        if (context.getCommandBuild() == null) {
-            context.setCommandBuild(command.getBuild());
-        }
         final BuildPrepareAction prepare = new BuildPrepareAction();
         prepare.execute(context);
         final BuildResolveAction action = new BuildResolveAction();

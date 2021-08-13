@@ -94,7 +94,6 @@ public class BuildExecution extends OpenShiftExecution {
     public BuildContext createContext() throws SyndoException {
         final BuildContext context = new BuildContext();
         context.setCommand(this.command);
-        context.setCommandBuild(this.command.getBuild());
 
         // find and load configuration
         final Root config = this.loadConfig(context, this.command, this.command.getBuild().getBuildFile());

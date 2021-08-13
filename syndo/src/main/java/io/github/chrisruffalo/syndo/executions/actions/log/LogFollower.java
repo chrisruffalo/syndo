@@ -42,7 +42,8 @@ public abstract class LogFollower implements Runnable {
     @Override
     public void run() {
         try (
-            final InputStream stream = this.getLogWatch().getOutput();
+            final LogWatch watch = this.getLogWatch();
+            final InputStream stream = watch.getOutput();
             final BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(stream)));
         ) {
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {

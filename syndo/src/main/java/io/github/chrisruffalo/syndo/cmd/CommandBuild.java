@@ -23,8 +23,8 @@ public class CommandBuild extends CommandBootstrap {
         add("all");
     }};
 
-    @Parameter(names={"--disable-storage"}, description = "Disable the shared storage cache for this build run.")
-    private boolean storageDisabled = false;
+    @Parameter(names={"--disable-cache"}, description = "Disable the injected cache for this build run.")
+    private boolean cacheDisabled = false;
 
     @Parameter(names={"--tar", "-t"}, description = "File system path to output build tar to, deletes any existing tar at that path. By default the tar is built in memory")
     private Path tarOutput;
@@ -61,11 +61,11 @@ public class CommandBuild extends CommandBootstrap {
         this.force = force;
     }
 
-    public boolean isStorageDisabled() {
-        return storageDisabled;
+    public boolean isCacheDisabled() {
+        return cacheDisabled;
     }
 
-    public void setStorageDisabled(boolean storageDisabled) {
-        this.storageDisabled = storageDisabled;
+    public void setCacheDisabled(boolean cacheDisabled) {
+        this.cacheDisabled = cacheDisabled;
     }
 }

@@ -125,8 +125,11 @@ public abstract class OpenShiftExecution extends ActionExecution {
         //       in the execution result? but that would require the
         //       context to escape unless there was a post execution
         //       that encapsulated it
+        // todo: this can't even work! the client is used after the client is
+        //       closed!
         final List<PostAction> postActions = context.getPostActions();
         if (postActions != null && !postActions.isEmpty()) {
+            logger().info("Executing {} post-build actions...", postActions.size());
             postActions.forEach(postAction -> {
                 if (postAction == null || !postAction.isApplicable(context)) {
                     return;
@@ -137,6 +140,7 @@ public abstract class OpenShiftExecution extends ActionExecution {
                     logger().error("Error execution post action {}", postAction.getClass().getName(), ex);
                 }
             });
+            logger().info("Post-build actions complete");
         }
 
         return executionResult;
