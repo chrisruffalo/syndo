@@ -129,17 +129,24 @@ jobs:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
         with:
-          graalvm: '21.1.2.0'
-          java: 'java11'
+          graalvm: '21.2.0'
+          java: 'java8'
           arch: 'amd64'
 
+      # windows: install msbuild tools for native compile
       - name: Add msbuild to PATH
         if: contains(matrix.os, 'windows')
         uses: microsoft/setup-msbuild@v1.0.2
 
+      # windows: ensure that dev tools are added to path
       - name: Add toolkit to path
         if: contains(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
+
+      # ubuntu: install packages needed for graalvm native compile
+      - name: Install additional packages
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y zlib1g-dev
 
       - name: Install native-image component
         run: |

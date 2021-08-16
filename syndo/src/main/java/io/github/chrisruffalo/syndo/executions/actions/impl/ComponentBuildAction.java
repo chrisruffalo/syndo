@@ -196,7 +196,7 @@ public class ComponentBuildAction extends BuilderAction {
                     );
 
                 // wait for build pod to become available
-                PodResource<Pod> buildPod = null;
+                PodResource<Pod> buildPod;
                 do {
                     // todo: break out if too much time has passed
 
@@ -251,7 +251,7 @@ public class ComponentBuildAction extends BuilderAction {
 
         // if storage is enabled the build needs a little help to be marked as completed or failed immediately
         if (cacheEnabled) {
-            build.setStatus(new BuildStatusBuilder().withNewPhase(syndoBuildSuccess ? "Complete" : "Failed").build());
+            build.setStatus(new BuildStatusBuilder().withPhase(syndoBuildSuccess ? "Complete" : "Failed").build());
             client.builds().inNamespace(targetNamespace).withName(build.getMetadata().getName())
                     .createOrReplace(build);
         }

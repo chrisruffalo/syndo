@@ -21,7 +21,7 @@
     <properties>
         <revision>0.4.0</revision>
 
-        <version.graalvm>21.1.2.0</version.graalvm>
+        <version.graalvm>21.2.0</version.graalvm>
         <version.fabric8.kubernetes-client>5.5.0</version.fabric8.kubernetes-client>
         <version.fabric8.mockwebserver>0.1.8</version.fabric8.mockwebserver>
         <version.flatten>1.2.5</version.flatten>
