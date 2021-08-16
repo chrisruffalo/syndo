@@ -194,6 +194,7 @@ for DIR in ${DIRECTORIES[@]}; do
       # export some helpful variables for use inside the build.sh uploaded as the build step
       MOUNTPOINT=$(buildah mount ${CONTAINER})
       echo "MOUNTPOINT=${MOUNTPOINT}" >> ${DIR}/.meta/imports
+      export MOUNTPOINT
 
       # now actually run the build script with command tracing and by bubbling out errors
       (

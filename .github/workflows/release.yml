@@ -211,7 +211,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
-      - name: Delete Snapshot
+      - name: Delete Github Snapshot
         if: contains(github.ref, 'refs/heads/')
         uses: WyriHaximus/github-action-delete-package@master
         with:
@@ -219,7 +219,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Release
+      - name: Delete Github Release
         if: "!contains(github.ref, 'refs/heads/')"
         uses: WyriHaximus/github-action-delete-package@master
         with:
@@ -227,13 +227,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Snapshot
+      - name: Publish Github Snapshot
         if: contains(github.ref, 'refs/heads/')
         run: mvn -Pgithub-distribution -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Release
+      - name: Publish Github Release
         if: "!contains(github.ref, 'refs/heads/')"
         run: mvn -Pgithub-distribution --batch-mode deploy
         env:
