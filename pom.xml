@@ -19,7 +19,7 @@
     </developers>
 
     <properties>
-        <revision>0.4.0</revision>
+        <revision>0.4.1</revision>
 
         <version.graalvm>21.2.0</version.graalvm>
         <version.fabric8.kubernetes-client>5.5.0</version.fabric8.kubernetes-client>
