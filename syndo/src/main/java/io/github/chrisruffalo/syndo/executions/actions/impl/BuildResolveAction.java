@@ -16,13 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Resolves build components and the build order for those components.
@@ -178,15 +172,26 @@ public class BuildResolveAction extends BaseAction {
         // todo: check for cyclic dependencies
 
         // ensure that the build list is the nodes, in order
+        final Set<String> nodesInBuild = new HashSet<>();
         final List<DirSourceNode> buildOrder = new LinkedList<>();
         while(!sourceNodeMap.isEmpty()) {
             final Set<Map.Entry<String, DirSourceNode>> entrySet = new LinkedHashSet<>(sourceNodeMap.entrySet());
             for (Map.Entry<String, DirSourceNode> entry : entrySet) {
                 final DirSourceNode node = entry.getValue();
                 final BuildNode from = node.getFrom();
+
+                // if the node is in the build already remove it from the source
+                // and skip it
+                if(nodesInBuild.contains(node.getName())) {
+                    sourceNodeMap.remove(node.getName()); // this is belt-and-suspenders because the node should
+                                                          // have already been removed at this point but just in case...
+                    continue;
+                }
+
                 // if it starts from an image reference it can go instantly
                 if (from instanceof ImageRefSourceNode) {
                     buildOrder.add(node);
+                    nodesInBuild.add(node.getName()); // track already in build nodes to not re-add them
                     sourceNodeMap.remove(node.getName());
                     continue;
                 }
@@ -197,6 +202,7 @@ public class BuildResolveAction extends BaseAction {
                     final DirSourceNode fromFileSource = (DirSourceNode) from;
                     if (sourceNodeMap.get(fromFileSource.getName()) == null) {
                         buildOrder.add(node);
+                        nodesInBuild.add(node.getName()); // track already in build nodes to not re-add them
                         sourceNodeMap.remove(node.getName());
                         continue;
                     }
