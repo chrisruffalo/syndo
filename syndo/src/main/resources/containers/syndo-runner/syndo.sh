@@ -263,11 +263,12 @@ done
 
 # output all stats if it exists
 if [[ -f /syndo/working/stats ]]; then
-  echo "${BUILD_LOG_PREFIX} ======================================================================"
-  echo "${BUILD_LOG_PREFIX} Build Summary:"
-  echo "${BUILD_LOG_PREFIX} ======================================================================"
-  cat /syndo/working/stats
-  echo "${BUILD_LOG_PREFIX} ======================================================================"
+  stdbuf -o0 echo "${BUILD_LOG_PREFIX} ======================================================================"
+  stdbuf -o0 echo "${BUILD_LOG_PREFIX} Build Summary:"
+  stdbuf -o0 echo "${BUILD_LOG_PREFIX} ======================================================================"
+  stdbuf -o0 cat /syndo/working/stats
+  stdbuf -o0 echo "${BUILD_LOG_PREFIX} ======================================================================"
 fi
 
-# adding an explicit exit can cause the log read to fail
+# sleep for 1 second to ensure that all the logs are flushed even after the stdbuf changes
+sleep 1
