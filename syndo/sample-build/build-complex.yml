@@ -50,16 +50,3 @@ syndo:
       components:
         - base
         - application
-  # secrets that are managed by syndo, secrets that already exist in the namespace can be
-  # directly referenced without needing to manage them here.
-  secrets:
-    - name: redhat-pull-secret
-      type: kubernetes.io/dockerconfig
-      contents:
-        # this is the key used for a pull secret
-        - key: .dockercfg
-          # the build will not work without you having a pull secret here
-          # that can be used for pulling from redhat's container registry
-          # at registry.redhat.io
-          file: pull-secret.txt
-
