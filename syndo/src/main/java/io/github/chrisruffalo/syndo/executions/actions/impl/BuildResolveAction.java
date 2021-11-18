@@ -59,7 +59,7 @@ public class BuildResolveAction extends BaseAction {
             node.setStorage(component.getStorage());
 
             // resolve the component path
-            Path componentDir = Paths.get(component.getPath());
+            Path componentDir = Paths.get(component.getPath()).normalize();
             if (!componentDir.isAbsolute()) {
                 // try and resolve relative to build yaml
                 componentDir = context.getConfigPath().getParent().resolve(componentDir).toAbsolutePath().normalize();

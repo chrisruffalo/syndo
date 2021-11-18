@@ -33,11 +33,6 @@ public class Root {
      */
     private List<Alias> aliases = new LinkedList<>();
 
-    /**
-     * Secrets that are managed (inserted/updated) by syndo.
-     */
-    private List<Secret> secrets = new LinkedList<>();
-
     public List<Component> getComponents() {
         return components;
     }
@@ -52,14 +47,6 @@ public class Root {
 
     public void setAliases(List<Alias> aliases) {
         this.aliases = aliases;
-    }
-
-    public List<Secret> getSecrets() {
-        return secrets;
-    }
-
-    public void setSecrets(List<Secret> secrets) {
-        this.secrets = secrets;
     }
 
     public Build getBuild() {

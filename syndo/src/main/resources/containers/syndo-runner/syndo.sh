@@ -79,15 +79,23 @@ echo "${BUILD_LOG_PREFIX} Extracted build contents from build archive"
 
 PULL_AUTHFILE=/tmp/.authfile-pull
 PUSH_AUTHFILE=/tmp/.authfile-push
-# need to use the built-in push secret to push to the internal registry and they need to be slightly modified to work
-# as according to https://docs.openshift.com/container-platform/4.7/cicd/builds/custom-builds-buildah.html.
-(echo "{ \"auths\": " ; cat ${PULL_DOCKERCFG_PATH}/.dockercfg ; echo "}") > ${PULL_AUTHFILE}
-(echo "{ \"auths\": " ; cat ${PUSH_DOCKERCFG_PATH}/.dockercfg ; echo "}") > ${PUSH_AUTHFILE}
+# the provided push and pull secrets are, by default, in "dockercfg" format and not "dockerconfigjson" format
+# so they need some modification to work with the tools according to https://docs.openshift.com/container-platform/4.7/cicd/builds/custom-builds-buildah.html.
+if [[ -f "${PULL_DOCKERCFG_PATH}/.dockercfg" ]]; then
+  (echo "{ \"auths\": " ; cat ${PULL_DOCKERCFG_PATH}/.dockercfg ; echo "}") > ${PULL_AUTHFILE}
+elif [[ -f "${PULL_DOCKERCFG_PATH}/.dockerconfigjson" ]]; then
+  cat ${PULL_DOCKERCFG_PATH}/.dockerconfigjson > ${PULL_AUTHFILE}
+fi
+if [[ -f "${PUSH_DOCKERCFG_PATH}/.dockercfg" ]]; then
+  (echo "{ \"auths\": " ; cat ${PUSH_DOCKERCFG_PATH}/.dockercfg ; echo "}") > ${PUSH_AUTHFILE}
+elif [[ -f "${PUSH_DOCKERCFG_PATH}/.dockerconfigjson" ]]; then
+  cat ${PUSH_DOCKERCFG_PATH}/.dockerconfigjson > ${PUSH_AUTHFILE}
+fi
 
 # create directory list and step through them
 DIRECTORIES=/syndo/working/*/
 for DIR in ${DIRECTORIES[@]}; do
-  # this is the outer subshell that prevents environment variables from leaking out of the exeuction and causing issues
+  # this is the outer subshell that prevents environment variables from leaking out of the execution and causing issues
   # in other shells.
   (
     # this normalizes the path so that redundant slashes are removed
@@ -116,6 +124,16 @@ for DIR in ${DIRECTORIES[@]}; do
     #   BUILD_SCRIPT - the path to another build file to use, build.sh is the default
     #   STORAGE_DRIVER - the storage driver to use (overlay is default but some builds will only work with vfs)
     source "${DIR}/.meta/env"
+
+    # look for environment variable with the PULL secret in it and if one exists create a temporary pull
+    # secret that references the file
+    COMPONENT_PULL_SECRET_VAR=PULL_SECRET_$COMPONENT
+    COMPONENT_PULL_SECRET=${!COMPONENT_PULL_SECRET_VAR}
+    if [[ "x" != "x${COMPONENT_PULL_SECRET}" ]]; then
+      mkdir "${DIR}/.tmp/"
+      PULL_AUTHFILE="${DIR}/.tmp/pullsecret"
+      echo "${COMPONENT_PULL_SECRET}" > "${PULL_AUTHFILE}"
+    fi
 
     # set the storage driver based on what is given in the environment, defaulting to "overlay" because it is faster
     # in the absence of a reason to use the vfs driver (which is slower).

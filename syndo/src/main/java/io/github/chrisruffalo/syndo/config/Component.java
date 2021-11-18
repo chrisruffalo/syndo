@@ -67,6 +67,12 @@ public class Component {
     @JsonProperty("transient")
     private boolean transientImage;
 
+    /**
+     * Allow an individual image to also have a particular pull secret.
+     */
+    @JsonProperty("pull-secret")
+    private PullSecretRef pullSecretRef = new PullSecretRef();
+
     public String getName() {
         return name;
     }
@@ -132,5 +138,13 @@ public class Component {
 
     public void setTransientImage(boolean transientImage) {
         this.transientImage = transientImage;
+    }
+
+    public PullSecretRef getPullSecretRef() {
+        return pullSecretRef;
+    }
+
+    public void setPullSecretRef(PullSecretRef pullSecretRef) {
+        this.pullSecretRef = pullSecretRef;
     }
 }

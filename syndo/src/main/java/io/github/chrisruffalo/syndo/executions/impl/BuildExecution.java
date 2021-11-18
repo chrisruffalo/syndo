@@ -14,7 +14,6 @@ import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentBuildAction
 import io.github.chrisruffalo.syndo.executions.actions.impl.ComponentFilterAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.CreateTarAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.HashFilterAction;
-import io.github.chrisruffalo.syndo.executions.actions.impl.ManageSecretsAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.PermissionCheckAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.CacheEnableAction;
 import io.github.chrisruffalo.syndo.executions.actions.impl.SyndoBuilderAction;
@@ -74,10 +73,6 @@ public class BuildExecution extends OpenShiftExecution {
         // create build tar
         final CreateTarAction createTarAction = new CreateTarAction();
         actions.add(createTarAction);
-
-        // ensure secrets are present for build
-        final ManageSecretsAction manageSecretsAction = new ManageSecretsAction();
-        actions.add(manageSecretsAction);
 
         final ComponentBuildAction componentBuildAction = new ComponentBuildAction();
         actions.add(componentBuildAction);

@@ -1,7 +1,7 @@
 package io.github.chrisruffalo.syndo.model;
 
 /**
- * Container source nodes consist of a repository image reference usually to an upstream
+ * Container source nodes consist of a repository image reference to an upstream
  * docker repository that must be pulled/present before some other node can be built. Because
  * they are pulled from an upstream they cannot have dependencies themselves.
  *

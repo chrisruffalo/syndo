@@ -1,12 +1,6 @@
 package io.github.chrisruffalo.syndo.executions.actions.impl;
 
-import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.Quantity;
-import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.api.model.BuildConfig;
@@ -23,10 +17,13 @@ import io.fabric8.openshift.api.model.ImageStream;
 import io.fabric8.openshift.api.model.ImageStreamBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.github.chrisruffalo.syndo.config.Cache;
+import io.github.chrisruffalo.syndo.config.Component;
+import io.github.chrisruffalo.syndo.config.PullSecretRef;
 import io.github.chrisruffalo.syndo.config.Root;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
 import io.github.chrisruffalo.syndo.executions.actions.BuilderAction;
 import io.github.chrisruffalo.syndo.executions.actions.post.CleanupImageStream;
+import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,30 +127,67 @@ public class ComponentBuildAction extends BuilderAction {
             metaBuilder.addToAnnotations(CacheAugmentationServiceAction.CACHE_CLAIM_NAME, claimName);
         }
 
-        final CustomBuildStrategy customBuildStrategy = new CustomBuildStrategyBuilder()
+        final CustomBuildStrategyBuilder customBuildStrategyBuilder = new CustomBuildStrategyBuilder()
                 .withFrom(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(imageStreamTagName + ":latest").build())
                 .withExposeDockerSocket(false)
-                .withForcePull(true)
-                .build();
+                .withForcePull(true);
 
+        // attach default secret to build
         if (buildConfig != null && buildConfig.getBuild() != null) {
             final io.github.chrisruffalo.syndo.config.Build buildOptions = buildConfig.getBuild();
-            final String pullSecret = buildOptions.getPullSecret();
-            if (pullSecret != null && !pullSecret.isEmpty()) {
-                final Secret secret = client.secrets().inNamespace(targetNamespace).withName(pullSecret).get();
+            final PullSecretRef pullSecret = buildOptions.getPullSecret();
+            if (pullSecret != null && !pullSecret.getName().isEmpty()) {
+                final Secret secret = client.secrets().inNamespace(targetNamespace).withName(pullSecret.getName()).get();
                 if (secret == null) {
-                    logger().error("Could not find pull secret, secret with name '{}' does not exist", pullSecret);
+                    logger().error("Could not find pull secret, secret with name '{}' does not exist in namespace '{}'", pullSecret.getName(), targetNamespace);
                     context.setStatus(BuildContext.Status.ERROR);
                     return;
                 } else {
-                    customBuildStrategy.setPullSecret(new LocalObjectReferenceBuilder().withName(pullSecret).build());
+                    customBuildStrategyBuilder.withPullSecret(new LocalObjectReferenceBuilder().withName(pullSecret.getName()).build());
+                    customBuildStrategyBuilder.addToEnv(new EnvVarBuilder().withName("DEFAULT_PULL_SECRET_IS_ALREADY_JSON").withValue("true").build());
                 }
             }
         }
+
+        // attach external secrets as env variables if they are provided
+        context.getBuildOrder().forEach(node -> {
+            final Component component = node.getComponent();
+            if (component.getPullSecretRef() == null) {
+                return;
+            }
+            final PullSecretRef ref = component.getPullSecretRef();
+            if (ref.getName() == null || ref.getName().isEmpty()) {
+                return;
+            }
+            final Secret secret = client.secrets().inNamespace(targetNamespace).withName(ref.getName()).get();
+            if (secret == null) {
+                logger().error("Could not find pull secret for component '{}', secret with name '{}' does not exist in namespace '{}'", component.getName(), ref.getName(), targetNamespace);
+                context.setStatus(BuildContext.Status.ERROR);
+                return;
+            }
+            // create environment variable with secret contents
+            customBuildStrategyBuilder.addToEnv(new EnvVarBuilder()
+                .withName(String.format("PULL_SECRET_%s", component.getName()))
+                .withValueFrom(new EnvVarSourceBuilder()
+                    .withSecretKeyRef(new SecretKeySelectorBuilder()
+                        .withName(ref.getName())
+                        .withKey(ref.getKey())
+                        .build()
+                    )
+                    .build()
+                )
+                .build()
+            );
+
+        });
+        if (BuildContext.Status.ERROR.equals(context.getStatus())) {
+            return;
+        }
+
         final BuildOutput output = new BuildOutputBuilder().withTo(new io.fabric8.kubernetes.api.model.ObjectReferenceBuilder().withNamespace(targetNamespace).withName(SYNDO_OUT).build()).build();
         final BuildConfigSpec customBuildConfigSpec = new BuildConfigSpecBuilder()
                 .withNewStrategy()
-                .withCustomStrategy(customBuildStrategy)
+                .withCustomStrategy(customBuildStrategyBuilder.build())
                 .endStrategy()
                 .withOutput(output)
                 .build();
@@ -179,21 +213,20 @@ public class ComponentBuildAction extends BuilderAction {
                     deleteTempFile = true;
                 }
 
-                // start build
-                build = client.buildConfigs()
-                    .inNamespace(targetNamespace)
-                    .withName(config.getMetadata().getName())
-                    .instantiate(
-                        new BuildRequestBuilder()
+                final BuildRequestBuilder builder = new BuildRequestBuilder()
                         .withNewMetadata()
                         .withName(SYNDO)
                         .withNamespace(targetNamespace)
                         .addToAnnotations(CacheAugmentationServiceAction.CACHE_ENABLED, Boolean.toString(cacheEnabled))
                         .endMetadata()
                         .withNewBinary()
-                        .endBinary()
-                        .build()
-                    );
+                        .endBinary();
+
+                // start build
+                build = client.buildConfigs()
+                    .inNamespace(targetNamespace)
+                    .withName(config.getMetadata().getName())
+                    .instantiate(builder.build());
 
                 // wait for build pod to become available
                 PodResource<Pod> buildPod;

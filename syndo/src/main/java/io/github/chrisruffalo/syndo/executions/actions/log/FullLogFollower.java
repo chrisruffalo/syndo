@@ -31,5 +31,6 @@ public class FullLogFollower extends LogFollower {
     @Override
     protected void processException(Exception ex) {
         System.err.printf("An error occurred waiting for build logs: %s%n", ex.getMessage());
+        ex.printStackTrace();
     }
 }

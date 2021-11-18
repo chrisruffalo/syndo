@@ -13,11 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Mojo(name = "build")
 public class SyndoBuildMojo extends AbstractMojo {
@@ -82,7 +78,7 @@ public class SyndoBuildMojo extends AbstractMojo {
      * yaml file.
      */
     @Parameter
-    private Map<String, String> properties;
+    private Map<String, Object> properties;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -152,7 +148,15 @@ public class SyndoBuildMojo extends AbstractMojo {
 
         // add properties map if given
         if(this.properties != null && !this.properties.isEmpty()) {
-            command.setProperties(properties);
+            final Map<String, String> stringProperties = new HashMap<>(properties.size());
+            this.properties.forEach((key, value) -> {
+                if (value instanceof String) {
+                    stringProperties.put(key, (String)value);
+                } else {
+                    stringProperties.put(key, String.valueOf(value));
+                }
+            });
+            command.setProperties(stringProperties);
         }
 
         // create execution

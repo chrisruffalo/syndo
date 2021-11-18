@@ -14,7 +14,7 @@ public class Build {
      * The name of a secret to use as a pull secret during the build.
      */
     @JsonProperty("pull-secret")
-    private String pullSecret = null;
+    private PullSecretRef pullSecret = null;
 
     /**
      * This is a map of labels to use on the build as node selectors to constrain
@@ -23,11 +23,11 @@ public class Build {
     @JsonProperty("node-selector")
     private Map<String, String> nodeSelector = new HashMap<>();
 
-    public String getPullSecret() {
+    public PullSecretRef getPullSecret() {
         return pullSecret;
     }
 
-    public void setPullSecret(String pullSecret) {
+    public void setPullSecret(PullSecretRef pullSecret) {
         this.pullSecret = pullSecret;
     }
 

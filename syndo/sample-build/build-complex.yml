@@ -2,10 +2,11 @@
 # options outside of the other more simple example file
 syndo:
   build:
-    # the pull secret here can be either managed from the build file
-    # or injected from outside the build process. if no pull secret
-    # can be found and one is specified an exception will be thrown
-    pull-secret: redhat-pull-secret
+    # the default pull secret for the build, this should only be used if ALL the
+    # images need this secret to be pulled. right now this will prevent pulling
+    # from the internal registry by default
+    pull-secret:
+      name: redhat-pull-secret
   components:
     # in the context of this sample build "base" would be something that comes from the upstream repository
     # or otherwise acts as the source image. this image is then used by other layers of the application
@@ -21,6 +22,9 @@ syndo:
     - name: rhel
       from: registry.redhat.io/openjdk/openjdk-11-rhel7
       path: rhel
+      # each component can also have a pull secret reference. they can reference the same or different secrets.
+      pull-secret:
+        name: other-redhat-pull-secret
     # this component uses a buildah build script style build but with a build script that
     # has a different name (create.sh) than the default name
     - name: application

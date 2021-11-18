@@ -344,6 +344,6 @@ public class CacheAugmentationServiceAction extends SyndoBuilderAction {
             .build();
 
         // create or replace webhook configuration
-        client.admissionRegistration().v1().mutatingWebhookConfigurations().inNamespace(context.getNamespace()).createOrReplace(webhookConfiguration);
+        client.admissionRegistration().v1().mutatingWebhookConfigurations().createOrReplace(webhookConfiguration);
     }
 }
