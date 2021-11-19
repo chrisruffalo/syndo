@@ -4,11 +4,9 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
 import io.fabric8.openshift.api.model.Build;
 import io.fabric8.openshift.client.OpenShiftClient;
-import org.apache.commons.compress.utils.IOUtils;
+import io.github.chrisruffalo.syndo.executions.actions.log.LogFollower;
+import io.github.chrisruffalo.syndo.executions.actions.log.LogFollowerFactory;
 import org.slf4j.Logger;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public abstract class BuilderAction extends BaseAction {
 
@@ -31,7 +29,7 @@ public abstract class BuilderAction extends BaseAction {
         return false;
     }
 
-    protected boolean waitAndWatchBuild(final String namespaceName, final OpenShiftClient client, final Build build, final Logger logger) throws Exception {
+    protected boolean waitAndWatchBuild(final BuildContext context, final String namespaceName, final OpenShiftClient client, final Build build, final Logger logger) throws Exception {
         logger.info("Started build: {}", build.getMetadata().getName());
 
         // wait for build to complete by looking up pod
@@ -52,28 +50,26 @@ public abstract class BuilderAction extends BaseAction {
             return false;
         }
 
-        // grab the logs when the pod is ready
+        // create a log watcher that will get logs from the running event and then use the log factory
+        // to direct the logs to the appropriate parsing/output mechanism
         final LogWatch log = client.pods().inNamespace(namespaceName).withName(buildPodName).watchLog();
-        final Thread t = new Thread(() -> {
-            final InputStream stream = log.getOutput();
-            try {
-                IOUtils.copy(stream, System.out);
-            } catch (IOException e) {
-                // nothing we can do about it
-            } finally {
-                // close the log
-                log.close();
-            }
-        });
-        t.start();
+        final LogFollower follower = LogFollowerFactory.getLogFollower(log, context);
+        final Thread thread = new Thread(follower);
+
+        // start the thread that will follow the logs
+        thread.start();
 
         // wait for the final status
         boolean succeeded = waitForStatus("succeeded", namespaceName, client, buildPodName, logger);
 
         // wait for log thread to finish
-        t.join();
+        thread.join();
 
-        // if the build did not succeed quit
+        if (succeeded) {
+            logger.info("Build complete: {}", build.getMetadata().getName());
+        }
+
+        // return the build status
         return succeeded;
     }
 

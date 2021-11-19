@@ -1,0 +1,11 @@
+syndo:
+  components:
+    - name: zed
+      from: xray
+      path: .
+    - name: xray
+      from: november
+      path: .
+    - name: november
+      from: upstream
+      path: .

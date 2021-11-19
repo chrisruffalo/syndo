@@ -21,7 +21,7 @@ public abstract class ActionExecution extends Execution {
 
         // execute actions and break on failed action
         for (final Action action : buildActions) {
-            action.build(context);
+            action.execute(context);
             if (!BuildContext.Status.OK.equals(context.getStatus())) {
                 switch (context.getStatus()) {
                     case DONE:
@@ -41,7 +41,7 @@ public abstract class ActionExecution extends Execution {
             }
         }
 
-        return result;
+       return result;
     }
 
     @Override

@@ -6,7 +6,7 @@ import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
 public class VerifyAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // todo: validate build configuration
     }
 }

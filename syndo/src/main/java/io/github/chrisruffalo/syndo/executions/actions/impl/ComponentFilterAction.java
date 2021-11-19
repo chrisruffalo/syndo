@@ -16,7 +16,7 @@ import java.util.Set;
 public class ComponentFilterAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         // at this point we have a list of all the nodes in build order
         // and we should be able to filter them out based on what components are selected
         final List<DirSourceNode> nodes = context.getBuildOrder();

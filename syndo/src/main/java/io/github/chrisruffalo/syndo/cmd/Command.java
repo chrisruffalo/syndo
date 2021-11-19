@@ -33,6 +33,8 @@ public class Command {
 
     private CommandVersion version = new CommandVersion();
 
+    private CommandCache cache = new CommandCache();
+
     private String parsedCommand;
 
     private JCommander commander;
@@ -77,6 +79,14 @@ public class Command {
         this.version = version;
     }
 
+    public CommandCache getCache() {
+        return cache;
+    }
+
+    public void setCache(CommandCache cache) {
+        this.cache = cache;
+    }
+
     public String getParsedCommand() {
         return parsedCommand;
     }
@@ -110,6 +120,7 @@ public class Command {
                 .addCommand("bootstrap", command.getBootstrap())
                 .addCommand("export", command.getExport())
                 .addCommand("version", command.getVersion())
+                .addCommand("cache", command.getCache())
                 .programName("syndo")
                 .build();
 

@@ -11,6 +11,7 @@ import io.fabric8.openshift.client.OpenShiftClient;
 import io.github.chrisruffalo.syndo.cmd.CommandOpenShift;
 import io.github.chrisruffalo.syndo.exceptions.SyndoException;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
+import io.github.chrisruffalo.syndo.executions.actions.PostAction;
 
 import java.io.IOException;
 import java.net.URL;
@@ -24,6 +25,9 @@ public abstract class OpenShiftExecution extends ActionExecution {
 
     @Override
     public ExecutionResult execute() {
+        // scope for execution result
+        ExecutionResult executionResult = null;
+
         final BuildContext context;
         try {
             context = createContext();
@@ -101,17 +105,44 @@ public abstract class OpenShiftExecution extends ActionExecution {
             // todo: warn about 'dangerous' namespaces (default, etc)
 
             // create or use existing namespace
-            if (!commandOpenShift.isDryRun() && client.projects().withName(namespace).get() == null) {
+            if (client.projects().withName(namespace).get() == null) {
                 client.projects().createOrReplace(new ProjectBuilder().withMetadata(new ObjectMetaBuilder().withName(namespace).build()).build());
                 logger().debug("Created namespace: {}", namespace);
             }
             logger().info("Namespace: {}", namespace);
 
             // execute build actions
-            return executeActions(context);
+            executionResult = executeActions(context);
         } catch (KubernetesClientException kce) {
-            logger().error("Error connecting to OpenShift: {}", kce.getMessage());
-            return new ExecutionResult(1, kce);
+            logger().error("OpenShift API error: {}", kce.getMessage(), kce);
+            // the client is broken and we cannot continue to use it
+            context.setClient(null);
+            executionResult = new ExecutionResult(1, kce);
         }
+
+        // perform post actions as needed
+        // todo: move this outside of execution altogether somehow, maybe
+        //       in the execution result? but that would require the
+        //       context to escape unless there was a post execution
+        //       that encapsulated it
+        // todo: this can't even work! the client is used after the client is
+        //       closed!
+        final List<PostAction> postActions = context.getPostActions();
+        if (postActions != null && !postActions.isEmpty()) {
+            logger().info("Executing {} post-build actions...", postActions.size());
+            postActions.forEach(postAction -> {
+                if (postAction == null || !postAction.isApplicable(context)) {
+                    return;
+                }
+                try {
+                    postAction.execute(context);
+                } catch (Exception ex) {
+                    logger().error("Error execution post action {}", postAction.getClass().getName(), ex);
+                }
+            });
+            logger().info("Post-build actions complete");
+        }
+
+        return executionResult;
     }
 }

@@ -10,7 +10,7 @@ import java.nio.file.Path;
 @Parameters(commandDescription = "Bootstrap the syndo builder into the target namespace")
 public class CommandBootstrap extends CommandOpenShift {
 
-    @Parameter(names={"--bootstrap-path", "-P"}, description = "Path to the bootstrap artifacts to use for the Syndo builder container image, providing this option forces the build of builder container", converter = StringToPathConverter.class)
+    @Parameter(names={"--bootstrap-path", "-P"}, description = "Path to the bootstrap artifacts to use for the Syndo builder container image", converter = StringToPathConverter.class)
     private Path bootstrapRoot;
 
     @Parameter(names={"--force-bootstrap", "-F"}, description = "Setting this option to true forces the build of the Syndo builder container even if the proper version is already present")

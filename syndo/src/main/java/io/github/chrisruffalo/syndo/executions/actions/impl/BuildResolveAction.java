@@ -2,6 +2,7 @@ package io.github.chrisruffalo.syndo.executions.actions.impl;
 
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.github.chrisruffalo.syndo.cmd.CommandBuild;
 import io.github.chrisruffalo.syndo.config.Component;
 import io.github.chrisruffalo.syndo.executions.actions.BaseAction;
 import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
@@ -9,20 +10,13 @@ import io.github.chrisruffalo.syndo.model.BuildNode;
 import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import io.github.chrisruffalo.syndo.model.DockerfileSourceNode;
 import io.github.chrisruffalo.syndo.model.ImageRefSourceNode;
-import io.github.chrisruffalo.syndo.cmd.CommandBuild;
 import io.github.chrisruffalo.syndo.resources.Resources;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Resolves build components and the build order for those components.
@@ -48,11 +42,13 @@ public class BuildResolveAction extends BaseAction {
     }
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
 
         // build everything into the node map
         final Map<String, String> outputRefResolveMap = new LinkedHashMap<>();
         final Map<String, DirSourceNode> sourceNodeMap = new LinkedHashMap<>();
+
+        // resolve the locations of the components
         context.getComponentMap().forEach((key, component) -> {
             DirSourceNode node = null;
             if (component.getDockerfile() != null && !component.getDockerfile().isEmpty()) {
@@ -63,16 +59,17 @@ public class BuildResolveAction extends BaseAction {
             node.setStorage(component.getStorage());
 
             // resolve the component path
-            Path componentDir = Paths.get(component.getPath());
+            Path componentDir = Paths.get(component.getPath()).normalize();
             if (!componentDir.isAbsolute()) {
-                if (!Files.exists(componentDir)) {
-                    // try and resolve relative to build yaml
-                    componentDir = context.getConfigPath().getParent().resolve(componentDir).normalize().toAbsolutePath();
-                }
+                // try and resolve relative to build yaml
+                componentDir = context.getConfigPath().getParent().resolve(componentDir).toAbsolutePath().normalize();
                 if (!Files.exists(componentDir)) {
                     // try and resolve relative to working dir
                     final Path workingDir = Paths.get(System.getProperty("user.dir"));
-                    componentDir = workingDir.resolve(componentDir).normalize().toAbsolutePath();
+                    componentDir = workingDir.resolve(componentDir).toAbsolutePath().normalize();
+                }
+                if (Files.exists(componentDir.toAbsolutePath())) {
+                    componentDir = componentDir.toAbsolutePath().normalize();
                 }
             }
             if (!Files.exists(componentDir)) {
@@ -89,7 +86,7 @@ public class BuildResolveAction extends BaseAction {
                 final String script = node.getScript();
                 final Path scriptPath = componentDir.resolve(script);
                 if (!Files.exists(scriptPath)) {
-                    logger().error("Could not find build script '{}' for component '{}', skipping", node.getScript(), component.getName());
+                    logger().error("Could not find build script '{}' for component '{}', skipping", scriptPath, component.getName());
                     return;
                 }
             }
@@ -175,15 +172,26 @@ public class BuildResolveAction extends BaseAction {
         // todo: check for cyclic dependencies
 
         // ensure that the build list is the nodes, in order
+        final Set<String> nodesInBuild = new HashSet<>();
         final List<DirSourceNode> buildOrder = new LinkedList<>();
         while(!sourceNodeMap.isEmpty()) {
             final Set<Map.Entry<String, DirSourceNode>> entrySet = new LinkedHashSet<>(sourceNodeMap.entrySet());
             for (Map.Entry<String, DirSourceNode> entry : entrySet) {
                 final DirSourceNode node = entry.getValue();
                 final BuildNode from = node.getFrom();
+
+                // if the node is in the build already remove it from the source
+                // and skip it
+                if(nodesInBuild.contains(node.getName())) {
+                    sourceNodeMap.remove(node.getName()); // this is belt-and-suspenders because the node should
+                                                          // have already been removed at this point but just in case...
+                    continue;
+                }
+
                 // if it starts from an image reference it can go instantly
                 if (from instanceof ImageRefSourceNode) {
                     buildOrder.add(node);
+                    nodesInBuild.add(node.getName()); // track already in build nodes to not re-add them
                     sourceNodeMap.remove(node.getName());
                     continue;
                 }
@@ -194,6 +202,7 @@ public class BuildResolveAction extends BaseAction {
                     final DirSourceNode fromFileSource = (DirSourceNode) from;
                     if (sourceNodeMap.get(fromFileSource.getName()) == null) {
                         buildOrder.add(node);
+                        nodesInBuild.add(node.getName()); // track already in build nodes to not re-add them
                         sourceNodeMap.remove(node.getName());
                         continue;
                     }

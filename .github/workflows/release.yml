@@ -129,17 +129,24 @@ jobs:
       # install GraalVM for native build
       - uses: DeLaGuardo/setup-graalvm@4.0
         with:
-          graalvm: '21.1.0'
-          java: 'java11'
+          graalvm: '21.2.0'
+          java: 'java8'
           arch: 'amd64'
 
+      # windows: install msbuild tools for native compile
       - name: Add msbuild to PATH
         if: contains(matrix.os, 'windows')
         uses: microsoft/setup-msbuild@v1.0.2
 
+      # windows: ensure that dev tools are added to path
       - name: Add toolkit to path
         if: contains(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
+
+      # ubuntu: install packages needed for graalvm native compile
+      - name: Install additional packages
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y zlib1g-dev
 
       - name: Install native-image component
         run: |
@@ -204,7 +211,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
-      - name: Delete Snapshot
+      - name: Delete Github Snapshot
         if: contains(github.ref, 'refs/heads/')
         uses: WyriHaximus/github-action-delete-package@master
         with:
@@ -212,7 +219,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Release
+      - name: Delete Github Release
         if: "!contains(github.ref, 'refs/heads/')"
         uses: WyriHaximus/github-action-delete-package@master
         with:
@@ -220,13 +227,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Snapshot
+      - name: Publish Github Snapshot
         if: contains(github.ref, 'refs/heads/')
         run: mvn -Pgithub-distribution -Drevision=${{ needs.metadata.outputs.pom-ver }}-SNAPSHOT --batch-mode clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Release
+      - name: Publish Github Release
         if: "!contains(github.ref, 'refs/heads/')"
         run: mvn -Pgithub-distribution --batch-mode deploy
         env:

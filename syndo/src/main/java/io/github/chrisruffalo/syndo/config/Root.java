@@ -18,6 +18,11 @@ public class Root {
     private Build build = new Build();
 
     /**
+     * Storage configuration
+     */
+    private Cache cache = new Cache();
+
+    /**
      * A list of components that comprise the possible build targets for a single build.
      */
     private List<Component> components = new LinkedList<>();
@@ -27,11 +32,6 @@ public class Root {
      * sub-units can be invoked without needing to type every component name explicitly.
      */
     private List<Alias> aliases = new LinkedList<>();
-
-    /**
-     * Secrets that are managed (inserted/updated) by syndo.
-     */
-    private List<Secret> secrets = new LinkedList<>();
 
     public List<Component> getComponents() {
         return components;
@@ -49,19 +49,19 @@ public class Root {
         this.aliases = aliases;
     }
 
-    public List<Secret> getSecrets() {
-        return secrets;
-    }
-
-    public void setSecrets(List<Secret> secrets) {
-        this.secrets = secrets;
-    }
-
     public Build getBuild() {
         return build;
     }
 
     public void setBuild(Build build) {
         this.build = build;
+    }
+
+    public Cache getCache() {
+        return cache;
+    }
+
+    public void setCache(Cache cache) {
+        this.cache = cache;
     }
 }

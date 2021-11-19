@@ -1,0 +1,9 @@
+# just a simple build
+syndo:
+  components:
+    - name: alpha
+      from: "upstream1"
+      path: .
+    - name: beta
+      from: "upstream1"
+      path: .

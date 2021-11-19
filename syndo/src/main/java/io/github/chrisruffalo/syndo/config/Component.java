@@ -1,5 +1,7 @@
 package io.github.chrisruffalo.syndo.config;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * A component is a single unit of build for Syndo. It must define a unique name
  * and a base image ('from' or 'dockerfile') as well as the source directory that
@@ -51,6 +53,25 @@ public class Component {
      * back to "overlay".
      */
     private String storage = "overlay";
+
+    /**
+     * Transient images are NOT pushed to the target registry. They are only used within
+     * the context of the build. If the image is not contained within the build then it
+     * will be added.
+     *
+     * This is good for images that are likely to change every build but that are used
+     * to layer other containers on. This saves storage in the registry and takes less time.
+     * This means, however, that they aren't cached so that if child layers depend on them
+     * they need to be rebuilt often.
+     */
+    @JsonProperty("transient")
+    private boolean transientImage;
+
+    /**
+     * Allow an individual image to also have a particular pull secret.
+     */
+    @JsonProperty("pull-secret")
+    private PullSecretRef pullSecretRef = new PullSecretRef();
 
     public String getName() {
         return name;
@@ -111,4 +132,19 @@ public class Component {
         this.storage = storage;
     }
 
+    public boolean isTransientImage() {
+        return transientImage;
+    }
+
+    public void setTransientImage(boolean transientImage) {
+        this.transientImage = transientImage;
+    }
+
+    public PullSecretRef getPullSecretRef() {
+        return pullSecretRef;
+    }
+
+    public void setPullSecretRef(PullSecretRef pullSecretRef) {
+        this.pullSecretRef = pullSecretRef;
+    }
 }

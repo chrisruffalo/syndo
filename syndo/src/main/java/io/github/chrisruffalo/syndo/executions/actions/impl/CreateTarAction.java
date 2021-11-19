@@ -5,8 +5,8 @@ import io.github.chrisruffalo.syndo.executions.actions.BuildContext;
 import io.github.chrisruffalo.syndo.model.DirSourceNode;
 import io.github.chrisruffalo.syndo.model.DockerfileSourceNode;
 import io.github.chrisruffalo.syndo.model.ImageRefSourceNode;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import io.github.chrisruffalo.syndo.resources.TarCreator;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,7 +17,7 @@ import java.util.Map;
 public class CreateTarAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         final Path outputTar = context.getOutputTar();
         try (final TarArchiveOutputStream tarStream = TarCreator.createTar(outputTar)) {
             final List<DirSourceNode> buildOrder = context.getBuildOrder();
@@ -29,7 +29,7 @@ public class CreateTarAction extends BaseAction {
 
                 final Path dirNodeDir = sourceNode.getDirectory();
                 final String prefix = String.format("%04d_%s", i, sourceNode.getName());
-                logger().info("Adding {} with context {} to {}", sourceNode.getName(), dirNodeDir, prefix);
+                logger().info("Adding component '{}' with context {} to {}", sourceNode.getName(), dirNodeDir, prefix);
 
                 // now add metadata to prefix
                 final Map<String, String> meta = new HashMap<>();
@@ -37,6 +37,7 @@ public class CreateTarAction extends BaseAction {
                 meta.put("OUTPUT_TARGET", sourceNode.getOutputRef());
                 meta.put("HASH", sourceNode.getHash());
                 meta.put("BUILD_SCRIPT", sourceNode.getScript());
+                meta.put("TRANSIENT", sourceNode.getComponent().isTransientImage() ? "true" : "false");
 
                 if(sourceNode instanceof DockerfileSourceNode) {
                     meta.put("DOCKERFILE", ((DockerfileSourceNode)sourceNode).getDockerfile());

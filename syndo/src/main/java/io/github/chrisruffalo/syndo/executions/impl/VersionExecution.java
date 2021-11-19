@@ -1,8 +1,8 @@
 package io.github.chrisruffalo.syndo.executions.impl;
 
-import io.github.chrisruffalo.syndo.info.BuildProperties;
 import io.github.chrisruffalo.syndo.executions.Execution;
 import io.github.chrisruffalo.syndo.executions.ExecutionResult;
+import io.github.chrisruffalo.syndo.info.BuildProperties;
 
 public class VersionExecution extends Execution {
 

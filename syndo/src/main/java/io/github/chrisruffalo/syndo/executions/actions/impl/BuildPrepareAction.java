@@ -19,7 +19,7 @@ import java.util.Map;
 public class BuildPrepareAction extends BaseAction {
 
     @Override
-    public void build(BuildContext context) {
+    public void execute(BuildContext context) {
         final Root config = context.getConfig();
 
         // create map of components so we can handle ordering/dependencies

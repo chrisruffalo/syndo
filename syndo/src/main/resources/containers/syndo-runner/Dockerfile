@@ -1,5 +1,5 @@
 # use the quay buildah image for up-to-date features and configuration
-FROM quay.io/containers/buildah
+FROM quay.io/containers/buildah:latest
 
 # copy the command and then execute it, the point here is to build as few layers as possible
 COPY *.sh /.
